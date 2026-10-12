@@ -2,6 +2,7 @@
   'use strict';
 
   const P = globalThis.MazevoPlanner;
+  const api = globalThis.browser || globalThis.chrome;
   const $ = (id) => document.getElementById(id);
   const DEFAULT_ORIGIN = 'https://east.mymazevo.com';
   let lastPlan = null;
@@ -120,7 +121,7 @@
   // ---------- talking to the Mazevo tab ----------
 
   async function ping(tabId) {
-    try { return await chrome.tabs.sendMessage(tabId, { type: 'ping' }); } catch (e) { return null; }
+    try { return await api.tabs.sendMessage(tabId, { type: 'ping' }); } catch (e) { return null; }
   }
 
   async function pingUntil(tabId, timeout) {
@@ -135,10 +136,10 @@
 
   function waitForLoad(tabId) {
     return new Promise((resolve) => {
-      const done = () => { chrome.tabs.onUpdated.removeListener(listener); clearTimeout(timer); resolve(); };
+      const done = () => { api.tabs.onUpdated.removeListener(listener); clearTimeout(timer); resolve(); };
       const listener = (id, info) => { if (id === tabId && info.status === 'complete') done(); };
       const timer = setTimeout(done, 30000);
-      chrome.tabs.onUpdated.addListener(listener);
+      api.tabs.onUpdated.addListener(listener);
     });
   }
 
@@ -146,11 +147,11 @@
     const param = new URLSearchParams(location.search).get('tab');
     if (param) {
       try {
-        const t = await chrome.tabs.get(+param);
+        const t = await api.tabs.get(+param);
         if (t && /mymazevo\.com/.test(t.url || '')) return t;
       } catch (e) { /* tab closed */ }
     }
-    const tabs = await chrome.tabs.query({ url: 'https://*.mymazevo.com/*' });
+    const tabs = await api.tabs.query({ url: 'https://*.mymazevo.com/*' });
     tabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
     return tabs[0] || null;
   }
@@ -159,14 +160,14 @@
     const base = $('base').value || P.ymd(new Date());
     const next = P.addDays(base, 1);
     $('run').disabled = true;
-    const me = await chrome.tabs.getCurrent();
+    const me = await Promise.resolve(api.tabs.getCurrent()).catch(() => null);
     let tab = null;
     try {
       status('Looking for your Mazevo tab…');
       tab = await findMazevoTab();
       if (!tab) {
         status('Opening Mazevo…');
-        tab = await chrome.tabs.create({ url: savedOrigin() + '/ops-manage', active: false, index: me ? me.index : undefined });
+        tab = await api.tabs.create({ url: savedOrigin() + '/ops-manage', active: false, index: me ? me.index : undefined });
         await waitForLoad(tab.id);
       }
 
@@ -174,7 +175,7 @@
       if (!info || !info.hooked) {
         // The tab was open before the extension was installed or updated.
         status('Reloading Mazevo so the planner can read it…');
-        await chrome.tabs.reload(tab.id);
+        await api.tabs.reload(tab.id);
         await waitForLoad(tab.id);
         info = await pingUntil(tab.id, 15000);
       }
@@ -184,7 +185,7 @@
       if (/login/i.test(info.path)) throw new Error('Sign in to Mazevo in the other tab, then click Refresh from Mazevo.');
       if (!/ops-manage/i.test(info.path)) {
         status('Opening Manage Operations…');
-        await chrome.tabs.update(tab.id, { url: info.origin + '/ops-manage' });
+        await api.tabs.update(tab.id, { url: info.origin + '/ops-manage' });
         await waitForLoad(tab.id);
         info = await pingUntil(tab.id, 15000);
         if (!info) throw new Error('Could not open Manage Operations.');
@@ -193,15 +194,15 @@
 
       // Chrome slows down timers in background tabs, so bring Mazevo forward while it loads.
       status('Reading bookings for ' + P.dayLabel(base) + ' and ' + P.dayLabel(next) + ' from Mazevo…');
-      await chrome.tabs.update(tab.id, { active: true });
-      const res = await chrome.tabs.sendMessage(tab.id, { type: 'collect', days: [base, next] });
-      if (me) await chrome.tabs.update(me.id, { active: true });
+      await api.tabs.update(tab.id, { active: true });
+      const res = await api.tabs.sendMessage(tab.id, { type: 'collect', days: [base, next] });
+      if (me) await api.tabs.update(me.id, { active: true });
       if (!res || !res.ok) throw new Error((res && res.error) || 'Mazevo did not answer.');
 
       render(P.plan(res.byDay[base] || [], res.byDay[next] || [], { today: base, tomorrow: next }));
       status('');
     } catch (e) {
-      if (me && tab) { try { await chrome.tabs.update(me.id, { active: true }); } catch (x) { /* ignore */ } }
+      if (me && tab) { try { await api.tabs.update(me.id, { active: true }); } catch (x) { /* ignore */ } }
       status(e.message || String(e), true);
     } finally {
       $('run').disabled = false;
@@ -222,7 +223,7 @@
   });
 
   window.__mzvRender = render; // used by tests
-  if (globalThis.chrome && chrome.tabs) {
+  if (api && api.tabs) {
     run();
   } else {
     status('Open this page from the Mazevo Setup Planner toolbar button.', true);

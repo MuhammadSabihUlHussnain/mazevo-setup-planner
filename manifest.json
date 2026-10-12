@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mazevo Setup Planner",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Compares today's room setups with tomorrow's in Mazevo Manage Operations and lists what each room needs to change into.",
   "action": {
     "default_title": "Plan tomorrow's room setups",
@@ -21,18 +21,38 @@
   "background": {
     "service_worker": "background.js"
   },
-  "host_permissions": ["https://*.mymazevo.com/*"],
+  "host_permissions": [
+    "https://*.mymazevo.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://*.mymazevo.com/*"],
-      "js": ["hook.js"],
-      "run_at": "document_start",
-      "world": "MAIN"
+      "matches": [
+        "https://*.mymazevo.com/*"
+      ],
+      "js": [
+        "inject.js"
+      ],
+      "run_at": "document_start"
     },
     {
-      "matches": ["https://*.mymazevo.com/*"],
-      "js": ["planner.js", "content.js"],
+      "matches": [
+        "https://*.mymazevo.com/*"
+      ],
+      "js": [
+        "planner.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "hook.js"
+      ],
+      "matches": [
+        "https://*.mymazevo.com/*"
+      ]
     }
   ]
 }

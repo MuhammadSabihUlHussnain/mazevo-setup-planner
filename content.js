@@ -6,6 +6,7 @@
   window.__mzvPlannerContent = true;
 
   const P = globalThis.MazevoPlanner;
+  const api = globalThis.browser || globalThis.chrome;
   const captures = new Map(); // "YYYY-MM-DD" -> { ts, bookings }
 
   window.addEventListener('message', (e) => {
@@ -114,7 +115,7 @@
     return { byDay };
   }
 
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'ping') {
       sendResponse({
         ok: true,
