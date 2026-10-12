@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Setup Planner</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #5d6676; --line: #e2e5ea;
+      --accent: #1f5fbf; --change: #b45309; --change-bg: #fff4e5; --empty: #0f766e; --empty-bg: #e7f6f4;
+      --check: #9f1239; --check-bg: #fdecef; --same: #4b5563; --same-bg: #f0f1f3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14171c; --panel: #1c2027; --text: #e7e9ee; --muted: #9aa3b2; --line: #2c323c;
+        --accent: #7aa7ff; --change: #f5b25a; --change-bg: #33281a; --empty: #5fd3c4; --empty-bg: #15302d;
+        --check: #f59ab0; --check-bg: #36202a; --same: #b6bcc6; --same-bg: #262a31;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+    header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+    h1 { font-size: 18px; margin: 0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+    label.date { color: var(--muted); display: flex; gap: 6px; align-items: center; }
+    input[type=date] { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); }
+    button { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button:disabled { opacity: .5; cursor: default; }
+    main { padding: 20px 24px 48px; max-width: 1400px; margin: 0 auto; }
+    #status { padding: 12px 14px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); margin-bottom: 16px; }
+    #status.error { border-color: var(--check); color: var(--check); }
+    #status:empty { display: none; }
+    .summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .chip { padding: 8px 12px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); }
+    .chip b { font-size: 18px; margin-right: 6px; }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 18px; overflow: hidden; }
+    section h2 { font-size: 15px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: baseline; }
+    section h2 small { color: var(--muted); font-weight: normal; }
+    .scroll { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    td.room { font-weight: 600; white-space: nowrap; }
+    td.room small, td small { display: block; color: var(--muted); font-weight: normal; }
+    td.time { white-space: nowrap; }
+    .setup { white-space: nowrap; }
+    .line { margin-top: 4px; }
+    td:last-child { min-width: 180px; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+    .change .tag { background: var(--change-bg); color: var(--change); }
+    .empty .tag { background: var(--empty-bg); color: var(--empty); }
+    .check .tag { background: var(--check-bg); color: var(--check); }
+    .same .tag, .none .tag { background: var(--same-bg); color: var(--same); }
+    ul.notes { margin: 4px 0 0; padding-left: 18px; color: var(--muted); }
+    .muted { color: var(--muted); }
+    footer { color: var(--muted); font-size: 12px; }
+    @media print {
+      header .controls, #status { display: none; }
+      body { background: #fff; color: #000; }
+      section { break-inside: avoid; border-color: #bbb; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Room setup plan</h1>
+    <div class="controls">
+      <label class="date">Today is <input type="date" id="base"></label>
+      <button id="run" class="primary">Refresh from Mazevo</button>
+      <button id="copy" disabled>Copy for Excel</button>
+      <button id="print" disabled>Print</button>
+    </div>
+  </header>
+  <main>
+    <div id="status"></div>
+    <div id="out"></div>
+    <footer id="foot"></footer>
+  </main>
+  <script src="planner.js"></script>
+  <script src="report.js"></script>
+</body>
+</html>
