@@ -112,7 +112,7 @@
     $('summary').innerHTML = state.view === 'plan' ? R.summary(state.chain, doneFor) : '';
     renderFilters();
     $('out').innerHTML = state.view === 'board'
-      ? R.board(state.chain, doneFor)
+      ? R.board(state.chain, doneFor, clock(state.readAt))
       : plans.map((p) => {
         const f = state.fresh[p.day];
         return R.day(p, { done: doneFor(p.day), diff: f && f.diff, since: f ? 'at ' + clock(new Date(f.since)) : '' });

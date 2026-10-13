@@ -78,6 +78,7 @@
       teardownEnd: raw.localTeardownDateTimeEnd || raw.localDateTimeEnd,
       headcount: +raw.attendance || 0,
       changed: !!raw.bookingChanged,
+      ready: !!raw.bookingIsReady, // the "Ready" column crews tick in Manage Operations
       diagram: url && raw.showUrl !== false ? { url, label: (raw.urlDescription || 'Diagram').trim() } : null,
       instructions: stripHtml(raw.reviewedNotes || raw.originalNotes),
       services: (raw.statuses || []).map((s) => ({
@@ -99,15 +100,24 @@
     const s = b && b.services.find(isRoomSetup);
     if (!s) return null;
     if (!s.description) return { label: 'Room Setup (no layout given)', style: '', count: null, state: s.state };
+    // "See Notes (1)": the real layout is written in the booking's notes, which
+    // only Mazevo's booking details show. The number is a placeholder.
+    if (/^see\s*notes?\b/i.test(s.description)) return { label: 'See notes in Mazevo', style: 'See notes', count: null, seeNotes: true, state: s.state };
     const m = s.description.match(/^(.*?)\s*\((\d+)\)\s*$/);
     return m
       ? { label: s.description, style: m[1].trim(), count: +m[2], state: s.state }
       : { label: s.description, style: s.description, count: null, state: s.state };
   }
 
+  // Services the crew cares about besides the room setup (not billing lines).
   function otherServices(b) {
-    return b.services.filter((s) => !isRoomSetup(s)).map((s) => s.provider).filter(Boolean);
+    return b.services.filter((s) => !isRoomSetup(s) && !/misc|charge|fee|billing|invoice/i.test(s.provider))
+      .map((s) => s.provider).filter(Boolean);
   }
+
+  // Booking statuses that mean "not settled yet". Other statuses such as
+  // "Setup (Union Staff)" are normal working statuses.
+  const isTentative = (status) => /hold|tentativ|pending|request|wait|inquir|cancel/i.test(status || '');
 
   // "Classroom Style (50)" -> "Classroom (50)"
   function short(setup) {
@@ -118,7 +128,7 @@
 
   const isTabling = (setup) => /tabl/i.test(setup.style);
 
-  const sameSetup = (a, b) => !!a && !!b && norm(a.style) === norm(b.style) && a.count === b.count;
+  const sameSetup = (a, b) => !!a && !!b && !a.seeNotes && !b.seeNotes && norm(a.style) === norm(b.style) && a.count === b.count;
 
   function event(b) {
     return b ? {
@@ -131,7 +141,9 @@
 
   // What it takes to turn `from` into `to`, in words.
   function describeChange(from, to) {
+    if (to.seeNotes) return 'Set up as described in the booking notes (open it in Mazevo)';
     if (!from) return 'Set up ' + short(to);
+    if (from.seeNotes) return 'Set up ' + short(to) + ' (the room was set from booking notes)';
     if (norm(from.style) === norm(to.style)) {
       const diff = to.count != null && from.count != null ? to.count - from.count : 0;
       if (!diff) return 'No change';
@@ -218,8 +230,10 @@
     return { chairs: b.chairs - a.chairs, t8: b.t8 - a.t8, t6: b.t6 - a.t6, round: b.round - a.round };
   }
 
-  // Readiness from Mazevo's own Room Setup status.
-  function readiness(setup) {
+  // Readiness from Mazevo: the booking's Ready flag (what crews tick in Manage
+  // Operations), else the Room Setup service status.
+  function readiness(setup, booking) {
+    if (booking && booking.ready) return 'ready';
     const st = setup && setup.state ? setup.state : '';
     if (/complete|done|finish|ready/i.test(st)) return 'done';
     if (/progress|started/i.test(st) && !/not\s*started/i.test(st)) return 'progress';
@@ -254,6 +268,13 @@
 
     const rows = [];
     const midday = [];
+    // Every booking on the day, for the status board (matches Mazevo's Ready column).
+    const board = [];
+    const entry = (key, b, setup, what, category) => ({
+      key, category, building: b.building, room: b.room, event: event(b),
+      setup: setup ? short(setup) : '', extras: otherServices(b), build: setup ? furniture(setup, cfg, b.building) : null,
+      setupBy: time(b.setupStart), setupBySort: String(b.setupStart), ready: readiness(setup, b), what
+    });
 
     for (const [k, r] of rooms) {
       r.list.sort((a, b) => String(a.setupStart).localeCompare(String(b.setupStart)));
@@ -283,18 +304,18 @@
         }
       } else if (!last) {
         category = 'empty';
-        change = 'Set up ' + short(needed);
+        change = describeChange(null, needed);
       } else if (!current) {
         category = 'change';
-        change = 'Set up ' + short(needed) + ' (nothing was set before)';
+        change = needed.seeNotes ? describeChange(null, needed) : 'Set up ' + short(needed) + ' (nothing was set before)';
       } else {
         change = describeChange(current, needed);
         category = change === 'No change' ? 'same' : 'change';
       }
 
-      if (first.status && !/confirmed/i.test(first.status)) notes.push('On ' + first.status + ', not confirmed yet');
+      if (isTentative(first.status)) notes.push('On ' + first.status + ', not confirmed yet');
       for (const s of [current, needed]) {
-        if (s && s.count === 1 && !isTabling(s)) notes.push('“' + s.label + '” has a count of 1, which looks like a typo');
+        if (s && s.count === 1 && !isTabling(s)) notes.push('“' + s.label + '” has a count of 1. Check the real number in Mazevo');
       }
       if (needed && needed.count && first.headcount > needed.count && !isTabling(needed)) {
         notes.push('Expecting ' + first.headcount + ' people but set for ' + needed.count);
@@ -310,8 +331,10 @@
         const sb = roomSetup(b);
         if (!sb || sameSetup(sa, sb)) {
           notes.push('Then ' + b.eventName + ' at ' + time(b.setupStart) + (sb ? ' (same setup)' : ' (no setup ordered)'));
+          board.push(entry('bk:' + b.id, b, sb, sb ? 'Same setup as the earlier event' : 'No setup ordered' + (sa ? '. ' + short(sa) + ' stays' : ''), 'same'));
           continue;
         }
+        board.push(entry('mid:' + b.id, b, sb, describeChange(sa, sb), 'change'));
         inRoom = sb;
         notes.push('Changes to ' + short(sb) + ' at ' + time(a.teardownEnd) + ' for ' + b.eventName);
         const gap = minutes(b.setupStart) - minutes(a.teardownEnd);
@@ -330,7 +353,7 @@
           gap,
           moves: moves(sa, sb, cfg, r.building),
           build: furniture(sb, cfg, r.building),
-          ready: readiness(sb),
+          ready: readiness(sb, b),
           state: sb.state || '',
           sort: String(a.teardownEnd)
         });
@@ -354,11 +377,13 @@
         setupBySort: String(first.setupStart),
         moves: category === 'change' || category === 'empty' ? moves(current, needed, cfg, r.building) : null,
         build: needed ? furniture(needed, cfg, r.building) : null,
-        ready: readiness(needed),
+        ready: readiness(needed, first),
         state: needed ? needed.state || '' : '',
         notes
       });
+      board.push(entry('first:' + first.id, first, needed, change, category));
     }
+    board.sort((a, b) => a.setupBySort.localeCompare(b.setupBySort) || (a.building + a.room).localeCompare(b.building + b.room));
 
     // Rooms used the day before that have nothing on this day.
     const freed = [];
@@ -405,6 +430,7 @@
       day: ctx.day,
       rows,
       midday,
+      board,
       freed,
       furniture: { buildings: [...totals.values()].sort((a, b) => a.building.localeCompare(b.building)), unknown },
       counts,
@@ -479,7 +505,7 @@
 
   const api = {
     ymd, addDays, parseLabelDate, time, dayLabel, weekday, longWeekday, condense,
-    plan, planChain, diff, furniture, DEFAULT_FURNITURE, TABLES
+    plan, planChain, diff, furniture, isTentative, DEFAULT_FURNITURE, TABLES
   };
   root.MazevoPlanner = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

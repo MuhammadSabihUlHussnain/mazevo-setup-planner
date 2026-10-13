@@ -34,6 +34,7 @@
   // Done if ticked here or marked complete in Mazevo.
   function status(item, done) {
     if (done.has(item.key)) return { cls: 'done', label: 'Done' };
+    if (item.ready === 'ready') return { cls: 'done', label: 'Ready in Mazevo' };
     if (item.ready === 'done') return { cls: 'done', label: 'Done in Mazevo' };
     if (item.ready === 'progress') return { cls: 'progress', label: 'In progress' };
     return { cls: 'todo', label: 'Not done' };
@@ -49,7 +50,7 @@
     if (opts.contact && ev.contact) meta.push('Contact: ' + ev.contact);
     let h = '<div class="ev">' + esc(ev.name) + '</div><small>' + esc(meta.filter(Boolean).join(' · ')) + '</small>';
     const badges = [];
-    if (ev.status && !/confirmed/i.test(ev.status)) badges.push('<span class="badge hold">' + esc(ev.status) + '</span>');
+    if (P.isTentative(ev.status)) badges.push('<span class="badge hold">' + esc(ev.status) + '</span>');
     if (opts.fresh) badges.push('<span class="badge new">' + esc(opts.fresh) + '</span>');
     else if (opts.planned && ev.changed) badges.push('<span class="badge info" title="Mazevo marks this booking as changed since operations last reviewed it">Changed in Mazevo</span>');
     if (ev.diagram && safeUrl(ev.diagram.url)) {
@@ -132,7 +133,7 @@
     const id = (s) => 'sec-' + plan.day + '-' + s;
     const of = (cat) => plan.rows.filter((r) => r.category === cat);
     const isDone = (x) => status(x, done).cls === 'done';
-    const mazevoState = (x) => (x.ready === 'done' || x.ready === 'progress' ? '<div class="badges">' + statusBadge(status(x, new Set())) + '</div>' : '');
+    const mazevoState = (x) => (x.ready && x.ready !== 'todo' ? '<div class="badges">' + statusBadge(status(x, new Set())) + '</div>' : '');
     const what = (r) => '<span class="tag">' + esc(r.change) + '</span>' + mazevoState(r) + movesText(r.moves) + notes(r.notes);
     const beforeSide = (r) => r.today
       ? eventCell(r.today) + setupLine(r.current, null, 'free after ' + r.freeAfter)
@@ -177,7 +178,7 @@
         '<td class="room">' + esc(b.building) + '</td><td class="num">' + b.rooms + '</td>' + PIECES.map(cell).join(''));
     });
     const furNote = '<p class="foot-note">Before each room’s first event. + means bring in, − means take out. ' +
-      (plan.furniture.unknown ? plan.furniture.unknown + ' room(s) have a layout the furniture rules don’t cover. ' : '') +
+      (plan.furniture.unknown ? 'Not counted: ' + plan.furniture.unknown + ' room(s) whose layout is in the booking notes or isn’t in the furniture rules. ' : '') +
       '<button class="linkish" data-open-settings>Edit furniture rules</button></p>';
 
     const pr = progress(plan, done);
@@ -203,35 +204,37 @@
    * Status board: every setup that needs doing, marked Done / In progress / Not done.
    * doneFor(day) -> Set of keys ticked for that day.
    */
-  function board(chain, doneFor) {
+  function board(chain, doneFor, readAt) {
     let all = 0;
     let ready = 0;
+    const rank = { todo: 0, progress: 1, done: 2 };
     const days = chain.plans.map((plan) => {
       const done = doneFor(plan.day);
-      const items = work(plan).map((x) => ({ x, st: status(x, done), when: String(x.setupBySort || x.sort || '') }));
-      items.sort((a, b) => a.when.localeCompare(b.when));
-      const rows = items.map(({ x, st }) => tr('board st-row-' + st.cls, x,
+      // Everything still to do first, then by setup time.
+      const items = (plan.board || []).map((x) => ({ x, st: status(x, done) }))
+        .sort((a, b) => rank[a.st.cls] - rank[b.st.cls] || a.x.setupBySort.localeCompare(b.x.setupBySort));
+      const rows = items.map(({ x, st }) => tr('board ' + x.category + ' st-row-' + st.cls, x,
         '<td class="stcell">' + statusBadge(st) + '</td>' + check(plan.day, x.key, done.has(x.key)) + roomCell(x) +
-        '<td>' + eventCell(x.tomorrow || x.to) + '</td><td><b>' + esc(x.needed || x.toSetup) + '</b>' +
+        '<td>' + eventCell(x.event) + '</td>' +
+        '<td><b>' + esc(x.setup || 'No room setup') + '</b>' + (x.extras.length ? ' + ' + esc(x.extras.join(', ')) : '') +
         (x.build ? '<div class="build">' + esc(buildText(x.build)) + '</div>' : '') + '</td>' +
+        '<td><span class="tag">' + esc(x.what) + '</span></td>' +
         '<td class="num">' + esc(x.setupBy) + '</td>'));
-      const already = plan.rows.filter((r) => r.category === 'same').map((r) => tr('board st-row-done', r,
-        '<td class="stcell"><span class="st st-done">Already set</span></td><td class="ck"></td>' + roomCell(r) +
-        '<td>' + eventCell(r.tomorrow) + '</td><td><b>' + esc(r.needed) + '</b></td><td class="num">' + esc(r.setupBy) + '</td>'));
       const d = items.filter((i) => i.st.cls === 'done').length;
       all += items.length;
       ready += d;
       return '<div class="day" data-day="' + esc(plan.day) + '"><h2 class="dayhead">' + esc(dayTitle(plan.day)) +
-        ' <small>' + d + ' of ' + items.length + ' ready</small></h2>' +
-        (items.length || already.length
-          ? section('board-' + plan.day, 'Setups', 'sorted by setup time', ['Status', '', 'Room', 'Event', 'Setup', 'Set up by'], rows.concat(already))
-          : '<section><h3>Nothing to set up</h3></section>') +
+        ' <small>' + d + ' of ' + items.length + ' ready' + (items.length - d ? ' · ' + (items.length - d) + ' still to do' : '') + '</small></h2>' +
+        (rows.length
+          ? section('board-' + plan.day, 'Bookings', 'still to do first, then by setup time', ['Status', '', 'Room', 'Event', 'Setup', 'What to do', 'Set up by'], rows)
+          : '<section><h3>No bookings</h3></section>') +
         '</div>';
     });
     const pct = all ? Math.round((ready / all) * 100) : 0;
-    return '<div class="board-top"><div class="big"><b>' + ready + '</b> of ' + all + ' setups ready</div>' +
+    return '<div class="board-top"><div class="big"><b>' + ready + '</b> of ' + all + ' bookings ready</div>' +
       '<div class="bar big-bar"><span style="width:' + pct + '%"></span></div>' +
-      '<p class="muted">A setup counts as done when it is ticked here or marked complete in Mazevo. Ticks are saved in this browser only.</p></div>' +
+      '<p class="muted">Ready = marked Ready in Mazevo Manage Operations, marked complete in Mazevo, or ticked here (ticks stay in this browser).' +
+      (readAt ? ' Read from Mazevo at ' + esc(readAt) + '. Click Refresh from Mazevo to update.' : '') + '</p></div>' +
       days.join('');
   }
 

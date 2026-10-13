@@ -15,7 +15,7 @@ A browser extension for event operations teams who use **Mazévo**. It compares 
 - **Changeovers during the day.** Rooms with several events that need a flip between them, with a warning when there are less than 30 minutes or none at all.
 - **Furniture.** Each room shows its full build (for example "15 × 6-ft tables · 30 chairs") and what to bring in or take out, with totals per building. Chairs per table, which table each layout uses, and building exceptions are all editable.
 - **Changed since you last checked.** New, updated and cancelled bookings since the last time you refreshed, highlighted in the list.
-- **Checklist and Status board.** Tick rooms off as they're done. The **Status board** view lists every setup as Done, In progress or Not done, with "9 of 13 ready" at the top, for a manager walk-through. A setup counts as done when it's ticked here or marked complete in Mazévo.
+- **Checklist and Status board.** The **Status board** lists every booking on each day, with the ones still to do at the top and "13 of 16 bookings ready" above them, for a manager walk-through. A booking counts as ready when it's marked **Ready** in Mazévo's Manage Operations, its Room Setup service is marked complete, or it's ticked in the report.
 - **Plan ahead.** Tomorrow, or the next 2 or 3 days, all on one page. On Fridays it offers to plan through Monday, and it carries each room's setup across empty days.
 - **Flags.** Bookings on Hold, "Changed in Mazévo" tags, Social Tables room diagram links, headcounts larger than the setup, and counts of 1 that look like typos.
 - **Find things fast.** Filter by building, search by room, event or layout, and optionally hide outdoor spaces.
@@ -97,7 +97,9 @@ At the top of the report:
   | Tabling | The count is tables: 6-ft tables with 2 chairs each |
 
   **Trent Lott** uses only 8-ft tables (3 chairs each) and banquet rounds (6 chairs each), so its classroom and tabling setups are built from 8-ft tables. Layouts the rules don't match are counted separately. Change any of this in ⚙ Settings.
-- **Status.** Done means ticked in the report or marked complete in Mazévo. In progress comes from Mazévo. Ticks are saved in the browser where they were made, so for a manager on another computer, mark setups complete in Mazévo.
+- **Status.** Ready comes from Mazévo's **Ready** column in Manage Operations (the booking's "ready" flag), or a Room Setup service marked complete. In progress comes from the service status. Ticks in the report are saved only in the browser where they were made, so for a manager on another computer, mark bookings Ready in Mazévo. Click **Refresh from Mazevo** to pick up new changes.
+- **"See Notes" layouts.** When Mazévo's layout says "See Notes", the real setup is in the booking's notes, which only Mazévo's booking details show. The report says "See notes in Mazevo" instead of guessing and leaves those rooms out of the furniture totals.
+- **Flags.** Only unsettled statuses (Hold, Tentative, Pending and similar) are flagged. Working statuses such as "Setup (Union Staff)" aren't. Billing lines such as Misc Charges are hidden.
 - **Changed since you last checked** compares with the last refresh in this browser for the same day. Mazévo's own "changed" flag is shown as **Changed in Mazévo**.
 
 It only sees what your Manage Operations view shows, so your saved Operations filters (buildings, service providers) apply. Ticks, settings and the last-seen copy for change tracking are kept in this browser for 3 weeks and never leave it.

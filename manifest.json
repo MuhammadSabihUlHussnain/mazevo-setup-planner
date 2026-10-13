@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mazevo Setup Planner",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Plans Mazevo room setups: what each room needs to change into, free rooms, same-day flips, furniture to move, and what changed. No login, no AI.",
   "action": {
     "default_title": "Plan tomorrow's room setups",
