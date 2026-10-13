@@ -126,7 +126,9 @@
     .muted { color: var(--muted); }
     .hidden { display: none !important; }
     footer { color: var(--muted); font-size: 12px; }
-    dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 0; width: min(780px, calc(100vw - 32px)); }
+    .demo-link { font-size: 12px; margin: 6px 0 0; }
+    .demo-link a { color: var(--accent); }
+    dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 0; width: min(880px, calc(100vw - 32px)); }
     dialog::backdrop { background: rgba(0, 0, 0, .35); }
     dialog h2 { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 16px; }
     dialog h4 { margin: 16px 0 6px; font-size: 14px; }
@@ -134,6 +136,8 @@
     dialog .body { padding: 14px 18px; max-height: 68vh; overflow: auto; }
     dialog .body p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
     dialog table input[type=text] { width: 100%; }
+    dialog table input[name=name] { min-width: 120px; }
+    dialog table input[name=match] { min-width: 200px; }
     dialog table input[type=number] { width: 72px; }
     dialog td, dialog th { padding: 5px 6px; border: 0; vertical-align: middle; }
     dialog .seats { display: flex; flex-wrap: wrap; gap: 16px; }
@@ -152,7 +156,7 @@
       :root { --bg: #fff; --panel: #fff; --text: #000; --muted: #444; --line: #bbb; --soft: #eee; }
       body { background: #fff; color: #000; font-size: 11px; }
       header { position: static; padding: 0 0 8px; border: 0; }
-      header .controls, #status, #hint, .filters, .summary .chip, .foot-note button, .print-skip, .board-top p, .dismiss { display: none !important; }
+      header .controls, #status, #hint, .filters, .summary .chip, .foot-note button, .print-skip, .board-top p, .dismiss, .demo-link { display: none !important; }
       #printed { display: block; margin-left: auto; color: #444; font-size: 11px; }
       main { padding: 0; max-width: none; }
       .day { margin: 0; }
@@ -209,6 +213,7 @@
     <div id="filters" class="filters"></div>
     <div id="out"></div>
     <footer id="foot"></footer>
+    <p class="demo-link"><a id="demoLink" href="report.html?demo" target="_blank" rel="noopener">See a demo with sample data</a></p>
   </main>
 
   <dialog id="settings">

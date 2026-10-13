@@ -1,0 +1,557 @@
+{
+ "note": "Made-up sample data for demo mode. Not real bookings.",
+ "days": [
+  [
+   {
+    "bookingId": 900001,
+    "eventNumber": "S1001",
+    "eventName": "Career Services Workshop",
+    "organizationName": "Career Services",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Room 101",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T09:00:00",
+    "localDateTimeEnd": "D0T11:00:00",
+    "localSetupDateTimeStart": "D0T08:30:00",
+    "localTeardownDateTimeEnd": "D0T11:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Classroom Style (40)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900002,
+    "eventNumber": "S1002",
+    "eventName": "Chess Club Weekly",
+    "organizationName": "Chess Club",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Room 102",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T13:00:00",
+    "localDateTimeEnd": "D0T15:00:00",
+    "localSetupDateTimeStart": "D0T12:45:00",
+    "localTeardownDateTimeEnd": "D0T15:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Hollow Square (12)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900003,
+    "eventNumber": "S1003",
+    "eventName": "Study Abroad Info Session",
+    "organizationName": "International Office",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Room 103",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T14:00:00",
+    "localDateTimeEnd": "D0T15:30:00",
+    "localSetupDateTimeStart": "D0T13:30:00",
+    "localTeardownDateTimeEnd": "D0T15:45:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Theater Style (60)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900004,
+    "eventNumber": "S1004",
+    "eventName": "Robotics Team Meeting",
+    "organizationName": "Robotics Team",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Room 210",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T16:00:00",
+    "localDateTimeEnd": "D0T18:00:00",
+    "localSetupDateTimeStart": "D0T15:30:00",
+    "localTeardownDateTimeEnd": "D0T18:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Classroom Style (30)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900005,
+    "eventNumber": "S1005",
+    "eventName": "Alumni Mixer",
+    "organizationName": "Alumni Association",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Ballroom A",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T17:00:00",
+    "localDateTimeEnd": "D0T20:00:00",
+    "localSetupDateTimeStart": "D0T16:00:00",
+    "localTeardownDateTimeEnd": "D0T20:30:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Banquet (80)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900006,
+    "eventNumber": "S1006",
+    "eventName": "Book Club",
+    "organizationName": "Library Friends",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Room 214",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T18:00:00",
+    "localDateTimeEnd": "D0T19:30:00",
+    "localSetupDateTimeStart": "D0T17:45:00",
+    "localTeardownDateTimeEnd": "D0T19:45:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "U-shape (14)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900007,
+    "eventNumber": "S1007",
+    "eventName": "Bake Sale",
+    "organizationName": "Nursing Society",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Lobby Table 1",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T10:00:00",
+    "localDateTimeEnd": "D0T14:00:00",
+    "localSetupDateTimeStart": "D0T10:00:00",
+    "localTeardownDateTimeEnd": "D0T14:00:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Tabling (2)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900008,
+    "eventNumber": "S1008",
+    "eventName": "Film Screening",
+    "organizationName": "Film Society",
+    "contactName": "Sample Contact",
+    "building": "Lakeside Hall",
+    "room": "Auditorium",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D0T19:00:00",
+    "localDateTimeEnd": "D0T21:30:00",
+    "localSetupDateTimeStart": "D0T18:30:00",
+    "localTeardownDateTimeEnd": "D0T21:45:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Theater Style (120)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   }
+  ],
+  [
+   {
+    "bookingId": 900021,
+    "eventNumber": "S1021",
+    "eventName": "Leadership Retreat Planning",
+    "organizationName": "Student Government",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Room 101",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": true,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T09:00:00",
+    "localDateTimeEnd": "D1T11:00:00",
+    "localSetupDateTimeStart": "D1T08:30:00",
+    "localTeardownDateTimeEnd": "D1T11:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Hollow Square (20)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900022,
+    "eventNumber": "S1022",
+    "eventName": "Coding Bootcamp",
+    "organizationName": "Computer Science Club",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Room 102",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": true,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T13:00:00",
+    "localDateTimeEnd": "D1T16:00:00",
+    "localSetupDateTimeStart": "D1T12:30:00",
+    "localTeardownDateTimeEnd": "D1T16:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Classroom Style (24)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900023,
+    "eventNumber": "S1023",
+    "eventName": "Graduate School Panel",
+    "organizationName": "Graduate School",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Room 103",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": true,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T15:00:00",
+    "localDateTimeEnd": "D1T16:30:00",
+    "localSetupDateTimeStart": "D1T14:30:00",
+    "localTeardownDateTimeEnd": "D1T16:45:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Theater Style (60)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900024,
+    "eventNumber": "S1024",
+    "eventName": "Robotics Team Meeting",
+    "organizationName": "Robotics Team",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Room 210",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T16:00:00",
+    "localDateTimeEnd": "D1T18:00:00",
+    "localSetupDateTimeStart": "D1T15:30:00",
+    "localTeardownDateTimeEnd": "D1T18:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Theater Style (45)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900025,
+    "eventNumber": "S1025",
+    "eventName": "Scholarship Luncheon",
+    "organizationName": "Foundation Office",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Ballroom A",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T11:30:00",
+    "localDateTimeEnd": "D1T13:30:00",
+    "localSetupDateTimeStart": "D1T10:30:00",
+    "localTeardownDateTimeEnd": "D1T14:00:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Banquet (64)",
+      "statusDescription": "Not Started"
+     }
+    ],
+    "url": "https://example.com/room-diagram",
+    "urlDescription": "Room Diagram",
+    "showUrl": true
+   },
+   {
+    "bookingId": 900026,
+    "eventNumber": "S1026",
+    "eventName": "Awards Dinner",
+    "organizationName": "Athletics",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Ballroom A",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T18:00:00",
+    "localDateTimeEnd": "D1T21:00:00",
+    "localSetupDateTimeStart": "D1T17:15:00",
+    "localTeardownDateTimeEnd": "D1T21:30:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Banquet (96)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900027,
+    "eventNumber": "S1027",
+    "eventName": "Poetry Night",
+    "organizationName": "Writers Guild",
+    "contactName": "Sample Contact",
+    "building": "Conference Center",
+    "room": "Room 214",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T18:30:00",
+    "localDateTimeEnd": "D1T20:00:00",
+    "localSetupDateTimeStart": "D1T18:15:00",
+    "localTeardownDateTimeEnd": "D1T20:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Theater Style (30)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900028,
+    "eventNumber": "S1028",
+    "eventName": "Volunteer Fair",
+    "organizationName": "Volunteer Center",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Lobby Table 1",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": true,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T10:00:00",
+    "localDateTimeEnd": "D1T14:00:00",
+    "localSetupDateTimeStart": "D1T10:00:00",
+    "localTeardownDateTimeEnd": "D1T14:00:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Tabling (2)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900029,
+    "eventNumber": "S1029",
+    "eventName": "Club Recruitment",
+    "organizationName": "Hiking Club",
+    "contactName": "Sample Contact",
+    "building": "Student Union",
+    "room": "Lobby Table 2",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": true,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T11:00:00",
+    "localDateTimeEnd": "D1T13:00:00",
+    "localSetupDateTimeStart": "D1T11:00:00",
+    "localTeardownDateTimeEnd": "D1T13:00:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Tabling (1)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900030,
+    "eventNumber": "S1030",
+    "eventName": "Board Meeting",
+    "organizationName": "Student Government",
+    "contactName": "Sample Contact",
+    "building": "Lakeside Hall",
+    "room": "Room 301",
+    "statusDescription": "Hold",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T15:00:00",
+    "localDateTimeEnd": "D1T17:00:00",
+    "localSetupDateTimeStart": "D1T14:30:00",
+    "localTeardownDateTimeEnd": "D1T17:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Conference Style (16)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900031,
+    "eventNumber": "S1031",
+    "eventName": "Open Mic",
+    "organizationName": "Music Club",
+    "contactName": "Sample Contact",
+    "building": "Lakeside Hall",
+    "room": "Auditorium",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": true,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T19:00:00",
+    "localDateTimeEnd": "D1T21:00:00",
+    "localSetupDateTimeStart": "D1T18:30:00",
+    "localTeardownDateTimeEnd": "D1T21:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Equipment ",
+      "serviceDescription": null,
+      "statusDescription": "Not Started"
+     },
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "Theater Style (120)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   },
+   {
+    "bookingId": 900032,
+    "eventNumber": "S1032",
+    "eventName": "Staff Training",
+    "organizationName": "Facilities",
+    "contactName": "Sample Contact",
+    "building": "Lakeside Hall",
+    "room": "Room 305",
+    "statusDescription": "Confirmed",
+    "bookingIsReady": false,
+    "bookingChanged": false,
+    "localDateTimeStart": "D1T08:00:00",
+    "localDateTimeEnd": "D1T12:00:00",
+    "localSetupDateTimeStart": "D1T07:30:00",
+    "localTeardownDateTimeEnd": "D1T12:15:00",
+    "attendance": 0,
+    "statuses": [
+     {
+      "serviceProvider": "Room Setup",
+      "serviceDescription": "See Notes (1)",
+      "statusDescription": "Not Started"
+     }
+    ]
+   }
+  ]
+ ]
+}

@@ -7,6 +7,7 @@
   const $ = (id) => document.getElementById(id);
   const DEFAULT_ORIGIN = 'https://east.mymazevo.com';
   const KEEP_DAYS = 21;
+  const DEMO = new URLSearchParams(location.search).has('demo');
   const TABLE_LABELS = { '': 'Chairs only', t8: '8-ft table', t6: '6-ft table', round: 'Banquet round' };
 
   const state = {
@@ -113,7 +114,7 @@
     $('summary').innerHTML = state.view === 'plan' ? R.summary(state.chain, doneFor) : '';
     renderFilters();
     $('out').innerHTML = state.view === 'board'
-      ? R.board(state.chain, doneFor, clock(state.readAt) + (state.nextAt ? ' (next update ' + clock(new Date(state.nextAt)) + ')' : ''))
+      ? R.board(state.chain, doneFor, DEMO ? '' : clock(state.readAt) + (state.nextAt ? ' (next update ' + clock(new Date(state.nextAt)) + ')' : ''))
       : plans.map((p) => {
         const f = state.fresh[p.day];
         return R.day(p, { done: doneFor(p.day), diff: f && f.diff, since: f ? 'at ' + clock(new Date(f.since)) : '' });
@@ -198,6 +199,7 @@
   // auto: an hourly refresh. It never brings Mazevo to the front, and on a
   // problem it keeps showing the last good read.
   async function run(opts) {
+    if (DEMO) { loadDemo(); return; }
     const auto = !!(opts && opts.auto);
     const my = ++runSeq;
     const stale = () => my !== runSeq; // a newer run (other date or span) has started
@@ -285,7 +287,12 @@
       if (stale()) return;
       let msg = e.message || String(e);
       if (/message channel closed|receiving end does not exist|could not establish connection|no tab with id/i.test(msg)) {
-        msg = 'The Mazevo tab reloaded, closed or signed out while it was being read.';
+        // Usually Mazevo sent the page to its login screen part-way through.
+        await new Promise((r) => setTimeout(r, 2000)); // let the redirect finish
+        const now = tab ? await pingUntil(tab.id, 6000) : null;
+        msg = now && /login/i.test(now.path)
+          ? 'Sign in to Mazevo in the other tab, then click Refresh from Mazevo.'
+          : 'The Mazevo tab reloaded, closed or signed out while it was being read.';
       }
       if (auto && state.readAt) {
         status('The hourly refresh at ' + clock(new Date()) + ' didn’t work: ' + msg + ' Showing what was read at ' + clock(state.readAt) + '. It will try again in 10 minutes.', 'warn');
@@ -301,7 +308,7 @@
   // ---------- hourly refresh ----------
 
   function scheduleNext(ms) {
-    state.nextAt = settings.auto ? Date.now() + ms : null;
+    state.nextAt = settings.auto && !DEMO ? Date.now() + ms : null;
     $('next').textContent = state.nextAt ? '(next ' + clock(new Date(state.nextAt)) + ')' : '';
   }
 
@@ -547,10 +554,39 @@
     else if (state.chain) rerender();
   });
 
+  // ---------- demo with made-up data (report.html?demo) ----------
+
+  async function loadDemo() {
+    const data = await (await fetch('demo/sample.json')).json();
+    if (!state.dateTouched) $('base').value = P.ymd(new Date());
+    const base = $('base').value || P.ymd(new Date());
+    const days = [base, P.addDays(base, 1)];
+    const when = (s) => (typeof s === 'string' ? s.replace(/^D(\d)/, (m, n) => days[+n]) : s);
+    state.lists = data.days.map((list) => list.map((raw) => P.condense(Object.assign({}, raw, {
+      localDateTimeStart: when(raw.localDateTimeStart),
+      localDateTimeEnd: when(raw.localDateTimeEnd),
+      localSetupDateTimeStart: when(raw.localSetupDateTimeStart),
+      localTeardownDateTimeEnd: when(raw.localTeardownDateTimeEnd)
+    }))));
+    state.days = days;
+    state.readAt = new Date();
+    state.fresh = {};
+    state.chain = P.planChain(state.lists, days, { furniture: settings.furniture });
+    render();
+    $('foot').textContent = 'Demo with made-up sample data. Nothing is read from Mazevo and nothing is changed.';
+    status('This is a demo with made-up rooms and events. To plan your real setups, open Mazevo Manage Operations and click Plan setups.', 'warn');
+  }
+
   window.__mzvTest = { state, render, replan, settings, tick }; // used by tests
-  if (api && api.tabs) {
+  if (DEMO) {
+    $('auto').checked = false;
+    $('auto').disabled = true;
+    $('span').disabled = true;
+    $('demoLink').classList.add('hidden');
+    loadDemo();
+  } else if (api && api.tabs) {
     run();
   } else {
-    status('Open this page from the Mazevo Setup Planner button.', 'error');
+    status('Open this page from the Setup Planner button.', 'error');
   }
 })();

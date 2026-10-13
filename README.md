@@ -1,4 +1,4 @@
-# Mazevo Setup Planner
+# Setup Planner for Mazévo
 
 A browser extension for event operations teams who use **Mazévo**. It compares the setup left in each room with the setup each room needs next and tells you what to change, for example "Classroom (30) → Theater (60)", "Remove 20 seats", or "free room, set up any time".
 
@@ -7,6 +7,10 @@ A browser extension for event operations teams who use **Mazévo**. It compares 
 - Works in Chrome, Edge, Brave and other Chromium browsers, on Windows and Mac, and in Safari on Mac.
 
 > Unofficial tool. Not affiliated with or endorsed by Mazévo / Gomazevo.
+
+**Try it without an account:** after installing, click the toolbar button, then **See a demo with sample data** at the bottom of the report. The demo uses made-up rooms and events and never touches Mazévo.
+
+Privacy policy: [PRIVACY.md](PRIVACY.md). Nothing leaves your browser.
 
 ## What it does
 
@@ -119,6 +123,7 @@ Mazévo signs its API requests, so the extension does **not** call the API itsel
 | `planner.js` | Planning rules and furniture estimates (no DOM; runs under Node for testing) |
 | `report.html`, `render.js`, `report.js` | The report page |
 | `background.js` | Opens the report from the toolbar or the Plan setups button |
+| `demo/sample.json` | Made-up bookings for the demo (`report.html?demo`) |
 | `safari/build-safari.sh` | Wraps the extension in a Mac app for Safari (needs Xcode) |
 
 ## Troubleshooting
