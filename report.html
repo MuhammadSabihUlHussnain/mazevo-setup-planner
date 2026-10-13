@@ -76,6 +76,10 @@
     section.changes h3 { background: var(--new-bg); color: var(--new); }
     section.changes ul { margin: 0; padding: 10px 16px 12px 34px; }
     section.changes li { margin: 3px 0; }
+    section.changes h3 .dismiss { float: right; font-size: 13px; font-weight: normal; }
+    .controls label.auto { color: var(--muted); font-size: 13px; }
+    #next { color: var(--muted); font-size: 12px; }
+    #status.warn { border-color: var(--mid); color: var(--mid); }
     .scroll { overflow-x: auto; }
     table { border-collapse: collapse; width: 100%; }
     th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -148,7 +152,7 @@
       :root { --bg: #fff; --panel: #fff; --text: #000; --muted: #444; --line: #bbb; --soft: #eee; }
       body { background: #fff; color: #000; font-size: 11px; }
       header { position: static; padding: 0 0 8px; border: 0; }
-      header .controls, #status, #hint, .filters, .summary .chip, .foot-note button, .print-skip, .board-top p { display: none !important; }
+      header .controls, #status, #hint, .filters, .summary .chip, .foot-note button, .print-skip, .board-top p, .dismiss { display: none !important; }
       #printed { display: block; margin-left: auto; color: #444; font-size: 11px; }
       main { padding: 0; max-width: none; }
       .day { margin: 0; }
@@ -185,6 +189,7 @@
         <option value="3">Plan next 3 days</option>
       </select>
       <button id="run" class="primary">Refresh from Mazevo</button>
+      <label class="auto" title="Reads Mazevo again every hour while this page is open. Mazevo stays in the background."><input type="checkbox" id="auto"> Every hour <span id="next"></span></label>
       <span class="group" role="group" aria-label="View">
         <button id="viewPlan" aria-pressed="true" title="What to set up in each room">Crew plan</button>
         <button id="viewBoard" aria-pressed="false" title="What's done and what still needs doing">Status board</button>

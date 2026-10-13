@@ -50,7 +50,8 @@
     furniture: stored.furniture && stored.furniture.layouts ? stored.furniture : clone(P.DEFAULT_FURNITURE),
     hideOutdoor: !!stored.hideOutdoor,
     span: stored.span || 1,
-    view: stored.view === 'board' ? 'board' : 'plan'
+    view: stored.view === 'board' ? 'board' : 'plan',
+    auto: stored.auto !== false // hourly refresh, on unless turned off
   };
   state.view = settings.view;
   const saveSettings = () => save('mzvSettings', settings);
@@ -112,7 +113,7 @@
     $('summary').innerHTML = state.view === 'plan' ? R.summary(state.chain, doneFor) : '';
     renderFilters();
     $('out').innerHTML = state.view === 'board'
-      ? R.board(state.chain, doneFor, clock(state.readAt))
+      ? R.board(state.chain, doneFor, clock(state.readAt) + (state.nextAt ? ' (next update ' + clock(new Date(state.nextAt)) + ')' : ''))
       : plans.map((p) => {
         const f = state.fresh[p.day];
         return R.day(p, { done: doneFor(p.day), diff: f && f.diff, since: f ? 'at ' + clock(new Date(f.since)) : '' });
@@ -187,7 +188,17 @@
 
   let runSeq = 0;
 
-  async function run() {
+  const HOUR = 60 * 60 * 1000;
+  const RETRY = 10 * 60 * 1000;
+
+  function withTimeout(promise, ms) {
+    return Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve({ ok: false, timedOut: true }), ms))]);
+  }
+
+  // auto: an hourly refresh. It never brings Mazevo to the front, and on a
+  // problem it keeps showing the last good read.
+  async function run(opts) {
+    const auto = !!(opts && opts.auto);
     const my = ++runSeq;
     const stale = () => my !== runSeq; // a newer run (other date or span) has started
     if (!state.dateTouched) $('base').value = P.ymd(new Date());
@@ -203,6 +214,7 @@
     try {
       status('Looking for your Mazevo tab…', 'busy');
       tab = await findMazevoTab();
+      if (!tab && auto) throw new Error('Mazevo isn’t open. Open it and stay signed in to keep the hourly refresh going.');
       if (!tab) {
         status('Opening Mazevo…', 'busy');
         tab = await api.tabs.create({ url: load('mzvOrigin', DEFAULT_ORIGIN) + '/ops-manage', active: false, index: me ? me.index : undefined });
@@ -233,12 +245,19 @@
         if (/login/i.test(info.path)) throw new Error(signIn);
       }
 
-      // Browsers slow down timers in background tabs, so bring Mazevo forward while it loads.
-      status('Reading ' + days.map(P.dayLabel).join(', ') + ' from Mazevo…', 'busy');
-      await api.tabs.update(tab.id, { active: true });
-      const res = await api.tabs.sendMessage(tab.id, { type: 'collect', days });
+      // Mazevo stays in the background. If it doesn't answer (some browsers put
+      // background tabs to sleep), a manual refresh tries once more with
+      // Mazevo brought forward.
+      status((auto ? 'Hourly refresh: reading ' : 'Reading ') + days.map(P.dayLabel).join(', ') + ' from Mazevo…', 'busy');
+      let res = await withTimeout(api.tabs.sendMessage(tab.id, { type: 'collect', days }), 90000);
       if (stale()) return;
-      if (me) await api.tabs.update(me.id, { active: true });
+      if (res && res.timedOut && !auto) {
+        await api.tabs.update(tab.id, { active: true });
+        res = await withTimeout(api.tabs.sendMessage(tab.id, { type: 'collect', days }), 90000);
+        if (me) await api.tabs.update(me.id, { active: true });
+        if (stale()) return;
+      }
+      if (res && res.timedOut) throw new Error('Mazevo didn’t answer in time. Its tab may be asleep.');
       if (!res || !res.ok) throw new Error((res && res.error) || 'Mazevo did not answer.');
 
       state.lists = days.map((d) => res.byDay[d] || []);
@@ -246,23 +265,52 @@
       state.readAt = new Date();
       state.chain = P.planChain(state.lists, days, { furniture: settings.furniture });
 
-      // Compare with what this browser saw last time for each day, then remember this read.
-      state.fresh = {};
+      // Compare with what this browser saw last time for each day, then remember
+      // this read. Changes add up while the page is open, until dismissed.
+      const fresh = {};
       for (const plan of state.chain.plans) {
         const prev = load('mzvSnap:' + plan.day, null);
-        if (prev && prev.items) state.fresh[plan.day] = { diff: P.diff(prev.items, plan.snapshot), since: prev.ts };
+        const kept = state.fresh[plan.day];
+        const diff = prev && prev.items ? P.diff(prev.items, plan.snapshot) : null;
+        const merged = P.mergeDiff(kept && kept.diff, diff);
+        if (merged && merged.any) fresh[plan.day] = { diff: merged, since: kept ? kept.since : prev.ts };
         save('mzvSnap:' + plan.day, { ts: Date.now(), items: plan.snapshot });
       }
+      state.fresh = fresh;
 
-      render();
+      scheduleNext(HOUR);
+      if (auto) rerender(); else render();
       status('');
     } catch (e) {
       if (stale()) return;
-      if (me && tab) { try { await api.tabs.update(me.id, { active: true }); } catch (x) { /* ignore */ } }
-      status(e.message || String(e), 'error');
+      let msg = e.message || String(e);
+      if (/message channel closed|receiving end does not exist|could not establish connection|no tab with id/i.test(msg)) {
+        msg = 'The Mazevo tab reloaded, closed or signed out while it was being read.';
+      }
+      if (auto && state.readAt) {
+        status('The hourly refresh at ' + clock(new Date()) + ' didn’t work: ' + msg + ' Showing what was read at ' + clock(state.readAt) + '. It will try again in 10 minutes.', 'warn');
+      } else {
+        status(msg, 'error');
+      }
+      scheduleNext(RETRY);
     } finally {
       if (!stale()) $('run').disabled = false;
     }
+  }
+
+  // ---------- hourly refresh ----------
+
+  function scheduleNext(ms) {
+    state.nextAt = settings.auto ? Date.now() + ms : null;
+    $('next').textContent = state.nextAt ? '(next ' + clock(new Date(state.nextAt)) + ')' : '';
+  }
+
+  // Checked every 30 seconds, and when the page comes back into view, so a
+  // computer waking from sleep catches up straight away.
+  function tick() {
+    if (!settings.auto || !state.nextAt || Date.now() < state.nextAt) return;
+    if ($('run').disabled || $('settings').open) return; // a read is running or settings are open
+    run({ auto: true });
   }
 
   // ---------- Friday hint ----------
@@ -384,7 +432,16 @@
   $('span').value = String(settings.span || 1);
   showHint();
 
-  $('run').addEventListener('click', run);
+  $('run').addEventListener('click', () => run());
+
+  $('auto').checked = settings.auto;
+  $('auto').addEventListener('change', () => {
+    settings.auto = $('auto').checked;
+    saveSettings();
+    scheduleNext(HOUR);
+  });
+  setInterval(tick, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tick(); });
 
   // Typing a date fires "change" for each part; wait until it settles.
   let dateTimer = 0;
@@ -447,6 +504,12 @@
     rerender();
   });
   $('out').addEventListener('click', (e) => {
+    const dismiss = e.target.closest('[data-dismiss]');
+    if (dismiss) {
+      delete state.fresh[dismiss.dataset.dismiss];
+      rerender();
+      return;
+    }
     if (e.target.closest('[data-open-settings]')) openSettings();
   });
 
@@ -484,7 +547,7 @@
     else if (state.chain) rerender();
   });
 
-  window.__mzvTest = { state, render, replan, settings }; // used by tests
+  window.__mzvTest = { state, render, replan, settings, tick }; // used by tests
   if (api && api.tabs) {
     run();
   } else {

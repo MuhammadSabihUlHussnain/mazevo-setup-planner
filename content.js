@@ -32,16 +32,33 @@
     return isNaN(d) ? null : P.ymd(d);
   }
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-  async function waitFor(fn, timeout, interval = 150) {
-    const end = Date.now() + timeout;
-    for (;;) {
-      const v = fn();
-      if (v) return v;
-      if (Date.now() > end) return null;
-      await sleep(interval);
-    }
+  // Resolves as soon as fn() is truthy. Reacts to page changes and captured
+  // data instead of relying on timers, because browsers slow timers right down
+  // in background tabs (the hourly refresh runs while Mazevo isn't in front).
+  function waitFor(fn, timeout) {
+    return new Promise((resolve) => {
+      const first = fn();
+      if (first) { resolve(first); return; }
+      let finished = false;
+      const finish = (v) => {
+        if (finished) return;
+        finished = true;
+        observer.disconnect();
+        window.removeEventListener('message', check);
+        clearInterval(poll);
+        clearTimeout(timer);
+        resolve(v || null);
+      };
+      function check() {
+        const v = fn();
+        if (v) finish(v);
+      }
+      const observer = new MutationObserver(check);
+      observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true });
+      window.addEventListener('message', check); // runs after the capture listener above
+      const poll = setInterval(check, 250);
+      const timer = setTimeout(() => finish(fn()), timeout);
+    });
   }
 
   const isDateLabel = (el) => el.children.length === 0 && P.parseLabelDate(el.textContent);

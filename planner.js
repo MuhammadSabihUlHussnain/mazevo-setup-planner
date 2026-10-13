@@ -503,9 +503,34 @@
     return { added, removed, changed, any: added.length + removed.length + changed.length > 0 };
   }
 
+  // Combine an earlier diff with a newer one, so changes add up across refreshes.
+  function mergeDiff(older, newer) {
+    if (!older) return newer;
+    if (!newer) return older;
+    const byId = (list) => new Map(list.map((x) => [String(x.id), x]));
+    const added = byId(older.added);
+    const removed = byId(older.removed);
+    const changed = byId(older.changed);
+    for (const a of newer.added) { removed.delete(String(a.id)); added.set(String(a.id), a); }
+    for (const r of newer.removed) {
+      const id = String(r.id);
+      if (added.has(id)) added.delete(id); else removed.set(id, r);
+      changed.delete(id);
+    }
+    for (const c of newer.changed) {
+      const id = String(c.id);
+      if (added.has(id)) { added.set(id, { ...c, what: undefined }); continue; } // still "new"
+      const prev = changed.get(id);
+      changed.set(id, prev ? { ...c, what: prev.what.concat(c.what) } : c);
+    }
+    const out = { added: [...added.values()], removed: [...removed.values()], changed: [...changed.values()] };
+    out.any = out.added.length + out.removed.length + out.changed.length > 0;
+    return out;
+  }
+
   const api = {
     ymd, addDays, parseLabelDate, time, dayLabel, weekday, longWeekday, condense,
-    plan, planChain, diff, furniture, isTentative, DEFAULT_FURNITURE, TABLES
+    plan, planChain, diff, mergeDiff, furniture, isTentative, DEFAULT_FURNITURE, TABLES
   };
   root.MazevoPlanner = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

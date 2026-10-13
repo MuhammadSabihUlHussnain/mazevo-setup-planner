@@ -115,13 +115,14 @@
 
   const dayTitle = (day) => P.longWeekday(day) + ', ' + P.dayLabel(day).replace(/^\w+, /, '');
 
-  function changes(diff, sinceText) {
+  function changes(diff, sinceText, day) {
     if (!diff || !diff.any) return '';
     const items = [];
     for (const a of diff.added) items.push('<li><b>New:</b> ' + esc(a.name) + ' — ' + esc(a.room) + (a.setup ? ', ' + esc(a.setup) : '') + ', set up by ' + esc(P.time(a.setupStart)) + '</li>');
     for (const c of diff.changed) items.push('<li><b>Updated:</b> ' + esc(c.name) + ' — ' + esc(c.room) + ': ' + esc(c.what.join('; ')) + '</li>');
     for (const r of diff.removed) items.push('<li><b>Gone:</b> ' + esc(r.name) + ' — ' + esc(r.room) + ' (cancelled or moved to another day)</li>');
-    return '<section class="changes"><h3>Changed since you last checked <small>' + esc(sinceText) + '</small></h3><ul>' + items.join('') + '</ul></section>';
+    return '<section class="changes"><h3>Changed since you last checked <small>' + esc(sinceText) + '</small>' +
+      '<button class="linkish dismiss" data-dismiss="' + esc(day || '') + '">Dismiss</button></h3><ul>' + items.join('') + '</ul></section>';
   }
 
   /** One planned day. st: { done: Set, diff, since } */
@@ -187,7 +188,7 @@
     return '<div class="day" data-day="' + esc(plan.day) + '">' +
       '<h2 class="dayhead">' + esc(dayTitle(plan.day)) +
       ' <small>' + (toSet ? toSet + ' to set up · ' + pr.done + ' of ' + pr.total + ' done' : 'nothing to set up') + '</small></h2>' +
-      changes(st.diff, st.since) +
+      changes(st.diff, st.since, plan.day) +
       section(id('flip'), 'Flip before the first event', 'sorted by when each room frees up', ['', 'Room', 'Before · ' + before, on, 'What to do'], flip) +
       section(id('free'), 'Free rooms: set up any time', 'nothing in the room before then', ['', 'Room', on, 'What to do'], free) +
       section(id('mid'), 'Changeovers during ' + P.longWeekday(plan.day), 'between events in the same room', ['', 'Room', 'Earlier event', 'Next event', 'What to do'], mid) +
@@ -234,7 +235,7 @@
     return '<div class="board-top"><div class="big"><b>' + ready + '</b> of ' + all + ' bookings ready</div>' +
       '<div class="bar big-bar"><span style="width:' + pct + '%"></span></div>' +
       '<p class="muted">Ready = marked Ready in Mazevo Manage Operations, marked complete in Mazevo, or ticked here (ticks stay in this browser).' +
-      (readAt ? ' Read from Mazevo at ' + esc(readAt) + '. Click Refresh from Mazevo to update.' : '') + '</p></div>' +
+      (readAt ? ' Read from Mazevo at ' + esc(readAt) + '. Click Refresh from Mazevo to update now.' : '') + '</p></div>' +
       days.join('');
   }
 

@@ -14,7 +14,8 @@ A browser extension for event operations teams who use **Mazévo**. It compares 
 - **Free rooms.** Rooms with nothing in them beforehand, so they can be set up any time.
 - **Changeovers during the day.** Rooms with several events that need a flip between them, with a warning when there are less than 30 minutes or none at all.
 - **Furniture.** Each room shows its full build (for example "15 × 6-ft tables · 30 chairs") and what to bring in or take out, with totals per building. Chairs per table, which table each layout uses, and building exceptions are all editable.
-- **Changed since you last checked.** New, updated and cancelled bookings since the last time you refreshed, highlighted in the list.
+- **Refreshes every hour.** While the report is open, it reads Mazévo again every hour with Mazévo left in the background, so the status board stays current. It catches up straight away when the computer wakes from sleep. Turn it off with the **Every hour** box.
+- **Changed since you last checked.** New, updated and cancelled bookings, highlighted in the list. Changes add up across the hourly refreshes until you click **Dismiss**.
 - **Checklist and Status board.** The **Status board** lists every booking on each day, with the ones still to do at the top and "13 of 16 bookings ready" above them, for a manager walk-through. A booking counts as ready when it's marked **Ready** in Mazévo's Manage Operations, its Room Setup service is marked complete, or it's ticked in the report.
 - **Plan ahead.** Tomorrow, or the next 2 or 3 days, all on one page. On Fridays it offers to plan through Monday, and it carries each room's setup across empty days.
 - **Flags.** Bookings on Hold, "Changed in Mazévo" tags, Social Tables room diagram links, headcounts larger than the setup, and counts of 1 that look like typos.
@@ -75,6 +76,7 @@ Then use it exactly like in Chrome. If the toolbar button isn't visible, right-c
 At the top of the report:
 
 - **From** is today's date by default, and **Refresh from Mazevo** always moves it to the real date unless you picked one yourself.
+- **Every hour** keeps the report up to date while it's open (on by default). The next update time is shown next to it. If a refresh fails (for example Mazévo signed you out), the last good data stays on screen and it tries again in 10 minutes. It never opens Mazévo by itself, so keep a Mazévo tab open and signed in.
 - **Plan tomorrow / next 2 days / next 3 days** sets how far ahead to look. All days show on one page, one after another.
 - **Crew plan / Status board** switches between the detailed plan and the done / not done list.
 - **Copy**, **CSV** and **Print** export every planned day. Copy and CSV include each setup's status and build.
