@@ -134,4 +134,48 @@
       return true;
     }
   });
+
+  // A small "Plan setups" button on Manage Operations, so nobody has to find
+  // the toolbar icon. The x hides it until the page is reloaded.
+  let host = null;
+  let dismissed = false;
+
+  function makeButton() {
+    host = document.createElement('div');
+    host.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:2147483000;';
+    const shadow = host.attachShadow({ mode: 'open' });
+    shadow.innerHTML =
+      '<style>' +
+      '.wrap{display:flex;align-items:center;gap:2px;font:600 14px/1 "Segoe UI",system-ui,-apple-system,sans-serif;' +
+      'background:#1f5fbf;color:#fff;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);}' +
+      'button{all:unset;cursor:pointer;color:#fff;}' +
+      '.go{padding:11px 6px 11px 16px;display:flex;align-items:center;gap:8px;}' +
+      '.x{padding:11px 14px 11px 8px;opacity:.75;font-size:16px;}.x:hover,.go:hover{opacity:1;text-decoration:underline;}' +
+      '</style>' +
+      '<div class="wrap"><button class="go" title="Compare today’s and tomorrow’s room setups">' +
+      '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1.5"/>' +
+      '<rect x="9" y="1" width="6" height="6" rx="1.5" opacity=".6"/><rect x="1" y="9" width="6" height="6" rx="1.5" opacity=".6"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>' +
+      'Plan setups</button><button class="x" title="Hide until reload" aria-label="Hide">×</button></div>';
+    shadow.querySelector('.go').addEventListener('click', () => {
+      api.runtime.sendMessage({ type: 'openReport' });
+    });
+    shadow.querySelector('.x').addEventListener('click', () => {
+      dismissed = true;
+      host.remove();
+    });
+  }
+
+  function syncButton() {
+    const want = !dismissed && /ops-manage/i.test(location.pathname) && !!dateLabel();
+    if (want && !(host && host.isConnected)) {
+      if (!host) makeButton();
+      document.body.appendChild(host);
+    } else if (!want && host && host.isConnected) {
+      host.remove();
+    }
+  }
+
+  // Mazevo is a single-page app, so the route can change without a reload.
+  setInterval(syncButton, 1500);
+  syncButton();
 })();

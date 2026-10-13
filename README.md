@@ -1,11 +1,26 @@
 # Mazevo Setup Planner
 
-A Chrome extension for event operations teams who use **Mazévo**. It compares the setup left in each room today with the setup each room needs tomorrow and tells you what to change. For example, "Classroom (30) → Theater (60)", "Remove 20 seats", or "room is empty today, set up any time".
+A browser extension for event operations teams who use **Mazévo**. It compares the setup left in each room with the setup each room needs next and tells you what to change, for example "Classroom (30) → Theater (60)", "Remove 20 seats", or "free room, set up any time".
 
 - **No AI and no extra login.** It reads the booking data your signed-in Mazévo tab already loads.
-- **Read only.** It never changes anything in Mazévo and sends nothing anywhere. All processing happens in your browser.
+- **Read only.** It never changes anything in Mazévo and sends nothing anywhere. Everything happens in your browser.
+- Works in Chrome, Edge, Brave and other Chromium browsers, on Windows and Mac, and in Safari on Mac.
 
 > Unofficial tool. Not affiliated with or endorsed by Mazévo / Gomazevo.
+
+## What it does
+
+- **Flip list.** Every room that needs a different layout or count, what's in it now, when it frees up, what it needs and when setup starts. Sorted in the order rooms free up.
+- **Free rooms.** Rooms with nothing in them beforehand, so they can be set up any time.
+- **Changeovers during the day.** Rooms with several events that need a flip between them, with a warning when there are less than 30 minutes or none at all.
+- **Furniture estimate.** Chairs, 6-ft tables and rounds to bring in or take out, per room and per building. The rules are editable to match how your crew sets rooms.
+- **Changed since you last checked.** New, updated and cancelled bookings since the last time you refreshed, highlighted in the list.
+- **Checklist.** Tick rooms off as they're done. A progress bar shows how far along you are, and ticks are saved in your browser.
+- **Plan ahead.** Tomorrow, or the next 2 or 3 days. On Fridays it offers to plan through Monday, and it carries each room's setup across empty days.
+- **Flags.** Bookings on Hold, "Changed in Mazévo" tags, Social Tables room diagram links, headcounts larger than the setup, and counts of 1 that look like typos.
+- **Find things fast.** Filter by building, search by room, event or layout, and optionally hide outdoor spaces.
+- **Share it.** Copy for Excel or Sheets, download a CSV, or print a crew sheet with tick boxes.
+- **One click from Mazévo.** A **Plan setups** button appears on the Manage Operations page, so there's no need to pin the toolbar icon.
 
 ## Install
 
@@ -18,7 +33,7 @@ Chrome (or Edge, Brave, or any Chromium browser):
 4. Click **Load unpacked** and select the unzipped folder. It's the one that contains `manifest.json`.
 5. Click the puzzle-piece icon in the toolbar and **pin** "Mazevo Setup Planner".
 
-Don't delete or move the folder afterwards, because Chrome loads the extension from it. To update, download the new version over the old folder and click the reload ↻ icon on the extension's card in `chrome://extensions`.
+Don't delete or move the folder afterwards, because Chrome loads the extension from it. To update, replace the folder with the new download and click the reload ↻ icon on the extension's card in `chrome://extensions`. Then reload any open Mazévo tab.
 
 ### Safari (Mac)
 
@@ -53,56 +68,49 @@ Then use it exactly like in Chrome. If the toolbar button isn't visible, right-c
 
 ## Use
 
-1. Sign in to Mazévo in Chrome (e.g. `https://east.mymazevo.com`). You need access to **Manage Operations**.
-2. Click the **Mazevo Setup Planner** toolbar button.
-3. A report tab opens. The extension briefly steps Mazévo to today and tomorrow to read the bookings, then puts Mazévo back on the date it was showing.
+1. Sign in to Mazévo (e.g. `https://east.mymazevo.com`). You need access to **Manage Operations**.
+2. Click **Plan setups** at the bottom right of Manage Operations, or click the extension's toolbar button.
+3. A report tab opens. The extension briefly steps Mazévo through the days it needs, then puts it back on the date it was showing.
 
-The report groups rooms into:
+At the top of the report:
 
-| Section | Meaning |
-|---|---|
-| **Flip after today's event** | Used today and needs a different layout or count tomorrow. Shows the current setup, when the room frees up, what it needs and when setup starts. Sorted by when the room frees up. |
-| **Not used today** | Can be set up any time. |
-| **Check with the requester** | Booked tomorrow but no room setup was ordered. |
-| **Already set** | Today's setup already matches tomorrow's. |
-| **Not booked tomorrow / no setup either day** | Nothing to do. |
-
-It also flags bookings that aren't confirmed (e.g. on **Hold**) and seat counts of 1 that look like typos.
-
-- **Today is …** lets you plan from another date. It always plans for the day after.
-- **Copy for Excel** copies the whole table (paste into Excel or Sheets).
-- **Print** gives a clean printout for the setup crew.
+- **From** is today's date by default, and **Refresh from Mazevo** always moves it to the real date unless you picked one yourself.
+- **Plan tomorrow / next 2 days / next 3 days** sets how far ahead to look. Several days show as tabs.
+- **Copy**, **CSV** and **Print** export what you see. Copy and CSV include every planned day.
+- **⚙ Settings** has the furniture rules and the option to hide outdoor spaces.
 
 ## How it decides
 
-- **Current setup** = the *Room Setup* service on the **last** booking in that room today (by teardown end).
-- **Needed setup** = the *Room Setup* service on the **first** booking in that room tomorrow (by setup start). Later bookings in the same room are listed as notes.
-- Same layout, different number → "Add N seats" / "Remove N seats" (tables for tabling).
-- Different layout → "Old (n) → New (n)".
-- Other services such as Equipment are shown next to the needed setup.
+- **Setup in the room** = the *Room Setup* service on the **last** booking in that room before the planned day (by teardown end). With several days, a room keeps its setup across days with no events.
+- **Needed setup** = the *Room Setup* service on the **first** booking in that room on the planned day (by setup start). Later bookings that need a different setup appear under **Changeovers during the day**.
+- Same layout, different number → "Add N seats" / "Remove N seats" (tables for tabling). Different layout → "Old (n) → New (n)".
+- **Furniture** per unit of the setup count, by default: Theater 1 chair. Classroom 1 chair and ½ a 6-ft table. Banquet 1 chair and ⅛ of a round. Hollow square / U-shape / conference 1 chair and ½ a table. Tabling 1 table and 2 chairs. Layouts the rules don't match are counted separately.
+- **Changed since you last checked** compares with the last refresh in this browser for the same day. Mazévo's own "changed" flag is shown as **Changed in Mazévo**.
 
-It only sees what your Manage Operations view shows, so your saved Operations filters (buildings, service providers) apply.
+It only sees what your Manage Operations view shows, so your saved Operations filters (buildings, service providers) apply. Ticks, settings and the last-seen copy for change tracking are kept in this browser for 3 weeks and never leave it.
 
 ## How it works
 
-Mazévo signs its API requests, so the extension does **not** call the API itself. `inject.js` adds `hook.js` to the Mazévo page, where it copies the `GetBookings` responses the page already receives. `content.js` clicks the day arrows to load the two days. `planner.js` holds the comparison rules, and `report.html` / `report.js` show the result.
+Mazévo signs its API requests, so the extension does **not** call the API itself. `inject.js` adds `hook.js` to the Mazévo page, where it copies the `GetBookings` responses the page already receives. `content.js` clicks the day arrows to load each day and adds the **Plan setups** button. `planner.js` holds the planning rules, `render.js` builds the report, and `report.js` runs the page.
 
 | File | Purpose |
 |---|---|
 | `manifest.json` | Extension settings (Manifest V3, only needs access to `*.mymazevo.com`) |
 | `inject.js` | Adds `hook.js` to the Mazévo page |
 | `hook.js` | Copies booking responses inside the Mazévo page |
-| `content.js` | Steps the date and collects bookings |
-| `planner.js` | Comparison rules (no DOM; runs under Node for testing) |
-| `report.html`, `report.js` | The report page |
-| `background.js` | Toolbar button |
+| `content.js` | Steps the date, collects bookings, adds the Plan setups button |
+| `planner.js` | Planning rules and furniture estimates (no DOM; runs under Node for testing) |
+| `report.html`, `render.js`, `report.js` | The report page |
+| `background.js` | Opens the report from the toolbar or the Plan setups button |
 | `safari/build-safari.sh` | Wraps the extension in a Mac app for Safari (needs Xcode) |
 
 ## Troubleshooting
 
 - **"Sign in to Mazevo"**: sign in in the Mazévo tab, then click **Refresh from Mazevo** in the report.
 - **"Open Manage Operations in day view"**: the planner reads the day view. Switch back to it if you changed the view.
-- **Mazévo tab was open before you installed the extension**: the planner reloads it automatically once.
+- **Mazévo tab was open before you installed or updated the extension**: the planner reloads it automatically once.
+- **No Plan setups button**: it only shows on Manage Operations in day view. The × hides it until the page reloads.
+- **Furniture numbers look off**: open ⚙ Settings and adjust the per-layout numbers.
 - If your Mazévo is not on `east.mymazevo.com`, just open your own Mazévo site first. The planner uses whichever `*.mymazevo.com` tab is open.
 
 ## License

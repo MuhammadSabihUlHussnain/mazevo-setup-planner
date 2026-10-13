@@ -7,3 +7,4 @@ plan*.json
 mazevo-bookings*.json
 .DS_Store
 Thumbs.db
+_test*
