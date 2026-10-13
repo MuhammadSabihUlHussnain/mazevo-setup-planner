@@ -141,47 +141,97 @@
     return short(from) + ' → ' + short(to);
   }
 
-  // ---------- furniture estimates ----------
+  // ---------- furniture ----------
 
-  // Per unit of the setup count (guests, or tables for tabling). Editable in Settings.
-  const DEFAULT_RULES = [
-    { match: 'theater, theatre, auditorium', chairs: 1, tables: 0, rounds: 0 },
-    { match: 'classroom, schoolroom', chairs: 1, tables: 0.5, rounds: 0 },
-    { match: 'banquet, rounds, crescent', chairs: 1, tables: 0, rounds: 0.125 },
-    { match: 'hollow square, u-shape, conference, boardroom', chairs: 1, tables: 0.5, rounds: 0 },
-    { match: 'tabling, vendor, exhibit', chairs: 2, tables: 1, rounds: 0 }
+  // Table types and how many chairs go at each one.
+  const TABLES = [
+    { key: 't8', label: '8-ft table', many: '8-ft tables' },
+    { key: 't6', label: '6-ft table', many: '6-ft tables' },
+    { key: 'round', label: 'banquet round', many: 'banquet rounds' }
   ];
 
-  const ZERO = { chairs: 0, tables: 0, rounds: 0 };
+  // Editable in Settings. Each layout uses one table type ('' = chairs only).
+  // Tabling counts tables rather than people. A building can have its own
+  // chairs-per-table, and 0 means that table type isn't used there.
+  const DEFAULT_FURNITURE = {
+    seats: { t8: 4, t6: 2, round: 8 },
+    layouts: [
+      { name: 'Classroom', match: 'classroom, schoolroom', table: 't6' },
+      { name: 'Banquet', match: 'banquet, rounds, crescent', table: 'round' },
+      { name: 'Hollow square', match: 'hollow square, conference, boardroom', table: 't8' },
+      { name: 'U-shape', match: 'u-shape, u shape', table: 't8' },
+      { name: 'Theatre', match: 'theater, theatre, auditorium', table: '' },
+      { name: 'Tabling', match: 'tabling, vendor, exhibit', table: 't6', perTable: true, chairsPerTable: 2 }
+    ],
+    buildings: [
+      { match: 'trent lott', seats: { t8: 3, t6: 0, round: 6 } }
+    ]
+  };
 
-  function furniture(setup, rules) {
+  const ZERO = { chairs: 0, t8: 0, t6: 0, round: 0 };
+
+  const matches = (list, text) => String(list).split(',').map(norm).some((w) => w && norm(text).includes(w));
+
+  // Chairs per table for this building; a type set to 0 there is swapped for
+  // the other rectangular table (or rounds as a last resort).
+  function seatsFor(cfg, building, type) {
+    const b = (cfg.buildings || []).find((x) => x.match && matches(x.match, building));
+    const seat = (t) => {
+      if (b && b.seats && b.seats[t] !== undefined && b.seats[t] !== null && b.seats[t] !== '') return +b.seats[t];
+      return +(cfg.seats || DEFAULT_FURNITURE.seats)[t] || 0;
+    };
+    const order = { t6: ['t6', 't8', 'round'], t8: ['t8', 't6', 'round'], round: ['round', 't8', 't6'] }[type] || [type];
+    for (const t of order) if (seat(t) > 0) return { type: t, seats: seat(t) };
+    return null;
+  }
+
+  /** What a setup is built from: { chairs, t8, t6, round }, ZERO for no setup, null if unknown. */
+  function furniture(setup, cfg, building) {
+    cfg = cfg || DEFAULT_FURNITURE;
     if (!setup) return ZERO;
     if (setup.count == null) return null;
-    const s = norm(setup.style);
-    const rule = (rules || DEFAULT_RULES).find((r) =>
-      String(r.match).split(',').map(norm).some((w) => w && s.includes(w)));
-    if (!rule) return null;
+    const layout = (cfg.layouts || []).find((l) => l.match && matches(l.match, setup.style));
+    if (!layout) return null;
+    const out = { chairs: 0, t8: 0, t6: 0, round: 0 };
     const n = setup.count;
-    return {
-      chairs: Math.ceil(n * (+rule.chairs || 0)),
-      tables: Math.ceil(n * (+rule.tables || 0)),
-      rounds: Math.ceil(n * (+rule.rounds || 0))
-    };
+    if (!layout.table) {
+      out.chairs = n;
+      return out;
+    }
+    const t = seatsFor(cfg, building, layout.table);
+    if (!t) return null;
+    if (layout.perTable) {
+      out[t.type] = n;
+      out.chairs = n * (+layout.chairsPerTable || 0);
+    } else {
+      out[t.type] = Math.ceil(n / t.seats);
+      out.chairs = n;
+    }
+    return out;
   }
 
   // Furniture to bring in (+) or take out (-) to go from one setup to another.
-  function moves(from, to, rules) {
-    const a = furniture(from, rules);
-    const b = furniture(to, rules);
+  function moves(from, to, cfg, building) {
+    const a = furniture(from, cfg, building);
+    const b = furniture(to, cfg, building);
     if (!a || !b) return null;
-    return { chairs: b.chairs - a.chairs, tables: b.tables - a.tables, rounds: b.rounds - a.rounds };
+    return { chairs: b.chairs - a.chairs, t8: b.t8 - a.t8, t6: b.t6 - a.t6, round: b.round - a.round };
+  }
+
+  // Readiness from Mazevo's own Room Setup status.
+  function readiness(setup) {
+    const st = setup && setup.state ? setup.state : '';
+    if (/complete|done|finish|ready/i.test(st)) return 'done';
+    if (/progress|started/i.test(st) && !/not\s*started/i.test(st)) return 'progress';
+    return st ? 'todo' : '';
   }
 
   // ---------- planning ----------
 
   /**
-   * Plan one day. `history` maps each room to the last booking seen in it on
-   * earlier days of the window; `prevList` is the day before; `list` is the
+   * Plan one day. `history` maps each room to { last, setup }: the last booking
+   * seen in it on earlier days of the window, and the last one that ordered a
+   * room setup (a later booking with no setup leaves that setup in place); `prevList` is the day before; `list` is the
    * day being planned.
    *
    * Row categories:
@@ -194,7 +244,7 @@
    * rooms used the day before with nothing on this day.
    */
   function planDay(history, prevList, list, ctx) {
-    const rules = ctx.rules || DEFAULT_RULES;
+    const cfg = ctx.furniture || DEFAULT_FURNITURE;
     const rooms = new Map();
     for (const b of list) {
       const k = roomKey(b);
@@ -207,9 +257,10 @@
 
     for (const [k, r] of rooms) {
       r.list.sort((a, b) => String(a.setupStart).localeCompare(String(b.setupStart)));
-      const last = history.get(k) || null;
+      const seen = history.get(k);
+      const last = seen ? seen.last : null;
       const first = r.list[0];
-      const current = last ? roomSetup(last) : null;
+      const current = seen && seen.setup ? roomSetup(seen.setup) : null;
       const needed = roomSetup(first);
       const extras = otherServices(first);
       const notes = [];
@@ -249,16 +300,19 @@
         notes.push('Expecting ' + first.headcount + ' people but set for ' + needed.count);
       }
 
-      // Changeovers between this room's events later the same day.
+      // Changeovers between this room's events later the same day. A booking
+      // with no setup ordered leaves the previous setup in the room.
+      let inRoom = needed || current;
       for (let i = 1; i < r.list.length; i++) {
         const a = r.list[i - 1];
         const b = r.list[i];
-        const sa = roomSetup(a);
+        const sa = inRoom;
         const sb = roomSetup(b);
         if (!sb || sameSetup(sa, sb)) {
           notes.push('Then ' + b.eventName + ' at ' + time(b.setupStart) + (sb ? ' (same setup)' : ' (no setup ordered)'));
           continue;
         }
+        inRoom = sb;
         notes.push('Changes to ' + short(sb) + ' at ' + time(a.teardownEnd) + ' for ' + b.eventName);
         const gap = minutes(b.setupStart) - minutes(a.teardownEnd);
         midday.push({
@@ -274,7 +328,10 @@
           freeAt: time(a.teardownEnd),
           setupBy: time(b.setupStart),
           gap,
-          moves: moves(sa, sb, rules),
+          moves: moves(sa, sb, cfg, r.building),
+          build: furniture(sb, cfg, r.building),
+          ready: readiness(sb),
+          state: sb.state || '',
           sort: String(a.teardownEnd)
         });
       }
@@ -295,7 +352,10 @@
         change,
         setupBy: time(first.setupStart),
         setupBySort: String(first.setupStart),
-        moves: category === 'change' || category === 'empty' ? moves(current, needed, rules) : null,
+        moves: category === 'change' || category === 'empty' ? moves(current, needed, cfg, r.building) : null,
+        build: needed ? furniture(needed, cfg, r.building) : null,
+        ready: readiness(needed),
+        state: needed ? needed.state || '' : '',
         notes
       });
     }
@@ -308,7 +368,8 @@
       const k = roomKey(b);
       if (rooms.has(k) || freedSeen.has(k)) continue;
       freedSeen.add(k);
-      freed.push({ building: b.building, room: b.room, today: event(b), current: short(roomSetup(b)), freeAfter: time(b.teardownEnd) });
+      const seen = history.get(k);
+      freed.push({ building: b.building, room: b.room, today: event(b), current: seen && seen.setup ? short(roomSetup(seen.setup)) : '', freeAfter: time(b.teardownEnd) });
     }
 
     const byRoom = (a, b) => (a.building + a.room).localeCompare(b.building + b.room);
@@ -328,10 +389,8 @@
     for (const r of rows) {
       if (r.category !== 'change' && r.category !== 'empty') continue;
       if (!r.moves) { unknown++; continue; }
-      const t = totals.get(r.building) || { building: r.building, chairs: 0, tables: 0, rounds: 0, rooms: 0 };
-      t.chairs += r.moves.chairs;
-      t.tables += r.moves.tables;
-      t.rounds += r.moves.rounds;
+      const t = totals.get(r.building) || { building: r.building, chairs: 0, t8: 0, t6: 0, round: 0, rooms: 0 };
+      for (const f of ['chairs', 't8', 't6', 'round']) t[f] += r.moves[f];
       t.rooms++;
       totals.set(r.building, t);
     }
@@ -360,17 +419,20 @@
   function planChain(lists, days, opts) {
     const per = days.map((d, i) => (lists[i] || []).filter((b) => onDay(b, d)));
     const history = new Map();
+    const later = (a, b) => !b || String(a.teardownEnd) > String(b.teardownEnd);
     const remember = (list) => {
       for (const b of list) {
         const k = roomKey(b);
-        const prev = history.get(k);
-        if (!prev || String(b.teardownEnd) > String(prev.teardownEnd)) history.set(k, b);
+        const h = history.get(k) || { last: null, setup: null };
+        if (later(b, h.last)) h.last = b;
+        if (roomSetup(b) && later(b, h.setup)) h.setup = b;
+        history.set(k, h);
       }
     };
     remember(per[0]);
     const plans = [];
     for (let i = 1; i < days.length; i++) {
-      plans.push(planDay(history, per[i - 1], per[i], { prevDay: days[i - 1], day: days[i], rules: opts && opts.rules }));
+      plans.push(planDay(history, per[i - 1], per[i], { prevDay: days[i - 1], day: days[i], furniture: opts && opts.furniture }));
       remember(per[i]);
     }
     return { base: days[0], plans };
@@ -417,7 +479,7 @@
 
   const api = {
     ymd, addDays, parseLabelDate, time, dayLabel, weekday, longWeekday, condense,
-    plan, planChain, diff, furniture, DEFAULT_RULES
+    plan, planChain, diff, furniture, DEFAULT_FURNITURE, TABLES
   };
   root.MazevoPlanner = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

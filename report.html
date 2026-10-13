@@ -12,6 +12,7 @@
       --change: #a14a05; --change-bg: #fff3e3; --empty: #0f6e66; --empty-bg: #e5f5f2;
       --check: #9f1239; --check-bg: #fdebef; --same: #4b5563; --same-bg: #eff1f3;
       --new: #6d28d9; --new-bg: #f1eafe; --info: #1d4ed8; --info-bg: #e8effd;
+      --ok: #15803d; --ok-bg: #e7f6ec; --mid: #a16207; --mid-bg: #fdf4d7;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -20,6 +21,7 @@
         --change: #f5b25a; --change-bg: #33271a; --empty: #5fd3c4; --empty-bg: #14302c;
         --check: #f59ab0; --check-bg: #36202a; --same: #b6bcc6; --same-bg: #262a31;
         --new: #c4a7ff; --new-bg: #2a2140; --info: #9dbbff; --info-bg: #1e2a44;
+        --ok: #6ee79a; --ok-bg: #16301f; --mid: #f3cf6b; --mid-bg: #33290f;
       }
     }
     * { box-sizing: border-box; }
@@ -29,6 +31,7 @@
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand img { width: 24px; height: 24px; }
     h1 { font-size: 17px; margin: 0; }
+    #printed { display: none; }
     .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
     .controls label { color: var(--muted); display: flex; gap: 6px; align-items: center; }
     input[type=date], select, input[type=search], input[type=number], input[type=text] {
@@ -43,6 +46,7 @@
     .group button { border-radius: 0; margin-left: -1px; }
     .group button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
     .group button:last-child { border-radius: 0 6px 6px 0; }
+    .group button[aria-pressed=true] { background: var(--text); color: var(--panel); border-color: var(--text); font-weight: 600; }
     main { padding: 18px 24px 48px; max-width: 1380px; margin: 0 auto; }
     #status { padding: 12px 14px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); margin-bottom: 14px; }
     #status.error { border-color: var(--check); color: var(--check); }
@@ -51,27 +55,25 @@
     #status:empty, #hint:empty { display: none; }
     #hint { padding: 10px 14px; border-radius: 8px; background: var(--info-bg); color: var(--info); margin-bottom: 14px; }
     #hint button { margin-left: 8px; }
-    nav#tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-    nav#tabs:empty { display: none; }
-    nav#tabs button { padding: 8px 14px; border-radius: 8px; }
-    nav#tabs button[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
-    nav#tabs small { opacity: .8; margin-left: 6px; }
     .summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
     .chip { padding: 8px 12px; border-radius: 8px; background: var(--panel); }
     .chip b { font-size: 18px; margin-right: 6px; }
     .progress { display: flex; align-items: center; gap: 10px; margin-left: auto; color: var(--muted); }
-    .progress .bar { width: 140px; height: 8px; border-radius: 99px; background: var(--soft); overflow: hidden; }
-    .progress .bar span { display: block; height: 100%; background: var(--empty); }
+    .bar { width: 140px; height: 8px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+    .bar span { display: block; height: 100%; background: var(--ok); }
     .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
     .filters .pill { padding: 5px 11px; border-radius: 999px; font-size: 13px; }
     .filters .pill[aria-pressed=true] { background: var(--text); color: var(--panel); border-color: var(--text); }
     .filters input[type=search] { min-width: 200px; margin-left: auto; }
-    .filters label { color: var(--muted); display: flex; gap: 6px; align-items: center; font-size: 13px; }
+    .day { margin-bottom: 28px; }
+    h2.dayhead { font-size: 20px; margin: 6px 0 12px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    h2.dayhead small { font-size: 14px; font-weight: normal; color: var(--muted); }
+    .day + .day h2.dayhead { padding-top: 16px; border-top: 2px solid var(--line); }
     section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
-    section h2 { font-size: 15px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-    section h2 small { color: var(--muted); font-weight: normal; margin-left: 6px; }
+    section h3 { font-size: 15px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    section h3 small { color: var(--muted); font-weight: normal; margin-left: 6px; }
     section.changes { border-color: var(--new); }
-    section.changes h2 { background: var(--new-bg); color: var(--new); }
+    section.changes h3 { background: var(--new-bg); color: var(--new); }
     section.changes ul { margin: 0; padding: 10px 16px 12px 34px; }
     section.changes li { margin: 3px 0; }
     .scroll { overflow-x: auto; }
@@ -89,6 +91,7 @@
     td:last-child { min-width: 190px; }
     .ev { font-weight: 500; }
     .line { margin-top: 4px; }
+    .build { margin-top: 2px; font-size: 13px; }
     .instr { margin-top: 4px; padding: 4px 8px; border-left: 3px solid var(--line); color: var(--muted); font-size: 13px; }
     .moves { margin-top: 5px; color: var(--muted); font-size: 13px; }
     .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
@@ -103,22 +106,37 @@
     .badge.info { background: var(--info-bg); color: var(--info); }
     .badge.link { background: var(--soft); color: var(--accent); }
     .badge.plain { background: var(--soft); color: var(--muted); }
+    .st { display: inline-block; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+    .st-done { background: var(--ok-bg); color: var(--ok); }
+    .st-done::before { content: "\2713  "; }
+    .st-progress { background: var(--mid-bg); color: var(--mid); }
+    .st-todo { background: var(--check-bg); color: var(--check); }
+    td.stcell { width: 1%; white-space: nowrap; }
+    .board-top { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+    .board-top .big { font-size: 18px; margin-bottom: 8px; }
+    .board-top .big b { font-size: 28px; margin-right: 4px; }
+    .board-top .big-bar { width: 100%; height: 12px; }
+    .board-top p { margin: 10px 0 0; font-size: 13px; }
     ul.notes { margin: 5px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
     .foot-note { margin: 0; padding: 10px 16px 12px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
     .muted { color: var(--muted); }
     .hidden { display: none !important; }
     footer { color: var(--muted); font-size: 12px; }
-    dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 0; width: min(720px, calc(100vw - 32px)); }
+    dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 0; width: min(780px, calc(100vw - 32px)); }
     dialog::backdrop { background: rgba(0, 0, 0, .35); }
     dialog h2 { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 16px; }
-    dialog .body { padding: 14px 18px; max-height: 65vh; overflow: auto; }
-    dialog .body p { margin: 0 0 10px; color: var(--muted); }
+    dialog h4 { margin: 16px 0 6px; font-size: 14px; }
+    dialog h4:first-child { margin-top: 0; }
+    dialog .body { padding: 14px 18px; max-height: 68vh; overflow: auto; }
+    dialog .body p { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
     dialog table input[type=text] { width: 100%; }
-    dialog table input[type=number] { width: 80px; }
-    dialog td, dialog th { padding: 6px; border: 0; }
+    dialog table input[type=number] { width: 72px; }
+    dialog td, dialog th { padding: 5px 6px; border: 0; vertical-align: middle; }
+    dialog .seats { display: flex; flex-wrap: wrap; gap: 16px; }
+    dialog .seats label { display: flex; gap: 6px; align-items: center; }
     dialog .actions { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--line); }
     dialog .actions .left { margin-right: auto; }
-    dialog .opt { display: flex; gap: 8px; align-items: center; margin: 12px 0 0; }
+    dialog .opt { display: flex; gap: 8px; align-items: center; margin: 14px 0 0; }
     @media (max-width: 700px) {
       header, main { padding-left: 16px; padding-right: 16px; }
       .controls { margin-left: 0; }
@@ -126,18 +144,39 @@
       .filters input[type=search] { margin-left: 0; width: 100%; }
     }
     @media print {
-      header .controls, #status, #hint, nav#tabs, .filters, .foot-note button, .summary .chip { display: none !important; }
-      header { position: static; }
-      body { background: #fff; color: #000; }
-      section { break-inside: avoid; border-color: #bbb; }
-      .badge.link::after { content: " " attr(href); font-weight: normal; }
-      tr.done td:not(.ck) { opacity: .6; }
+      @page { size: landscape; margin: 10mm; }
+      :root { --bg: #fff; --panel: #fff; --text: #000; --muted: #444; --line: #bbb; --soft: #eee; }
+      body { background: #fff; color: #000; font-size: 11px; }
+      header { position: static; padding: 0 0 8px; border: 0; }
+      header .controls, #status, #hint, .filters, .summary .chip, .foot-note button, .print-skip, .board-top p { display: none !important; }
+      #printed { display: block; margin-left: auto; color: #444; font-size: 11px; }
+      main { padding: 0; max-width: none; }
+      .day { margin: 0; }
+      .day ~ .day { break-before: page; }
+      .day + .day h2.dayhead { border: 0; padding-top: 0; }
+      h2.dayhead { font-size: 16px; margin: 0 0 8px; }
+      section { border-color: #999; border-radius: 0; margin-bottom: 10px; break-inside: auto; overflow: visible; }
+      section h3 { font-size: 13px; padding: 6px 8px; background: #f0f0f0; break-after: avoid; }
+      .scroll { overflow: visible; }
+      th, td { padding: 5px 7px; }
+      th { font-size: 10px; }
+      tr { break-inside: avoid; }
+      thead { display: table-header-group; }
+      td:last-child { min-width: 0; }
+      tr.done td:not(.ck) { opacity: .55; }
+      .tag, .badge, .st { border: 1px solid #999; background: #fff !important; color: #000 !important; }
+      .badge.link { display: none; }
+      td.ck input { width: 14px; height: 14px; }
+      .board-top { border: 0; padding: 0 0 8px; }
+      .bar span { background: #555; }
+      footer { margin-top: 8px; }
     }
   </style>
 </head>
 <body>
   <header>
     <div class="brand"><img src="icons/icon32.png" alt=""><h1 id="title">Room setup plan</h1></div>
+    <div id="printed"></div>
     <div class="controls">
       <label>From <input type="date" id="base"></label>
       <select id="span" aria-label="How far ahead">
@@ -146,10 +185,14 @@
         <option value="3">Plan next 3 days</option>
       </select>
       <button id="run" class="primary">Refresh from Mazevo</button>
+      <span class="group" role="group" aria-label="View">
+        <button id="viewPlan" aria-pressed="true" title="What to set up in each room">Crew plan</button>
+        <button id="viewBoard" aria-pressed="false" title="What's done and what still needs doing">Status board</button>
+      </span>
       <span class="group">
         <button id="copy" disabled title="Copy every planned day as a table for Excel or Sheets">Copy</button>
         <button id="csv" disabled title="Download every planned day as a CSV file">CSV</button>
-        <button id="print" disabled title="Print the day you are looking at">Print</button>
+        <button id="print" disabled title="Print what you see">Print</button>
       </span>
       <button id="settingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
     </div>
@@ -157,8 +200,6 @@
   <main>
     <div id="hint"></div>
     <div id="status"></div>
-    <nav id="tabs" role="tablist"></nav>
-    <div id="changes"></div>
     <div id="summary"></div>
     <div id="filters" class="filters"></div>
     <div id="out"></div>
@@ -169,17 +210,35 @@
     <form method="dialog">
       <h2>Settings</h2>
       <div class="body">
-        <p><b>Furniture rules.</b> How much furniture each layout uses, per person in the count (per table for tabling). Words are matched against the layout name. Change these to match how your crew sets rooms.</p>
+        <h4>Chairs per table</h4>
+        <p>Used to work out how many tables each setup needs.</p>
+        <div class="seats">
+          <label>8-ft table <input type="number" step="any" min="0" id="seat-t8"></label>
+          <label>6-ft table <input type="number" step="any" min="0" id="seat-t6"></label>
+          <label>Banquet round <input type="number" step="any" min="0" id="seat-round"></label>
+        </div>
+
+        <h4>Which table each layout uses</h4>
+        <p>Words are matched against the layout name in Mazevo. For tabling, the count in Mazevo is the number of tables.</p>
         <table>
-          <thead><tr><th>Layout words</th><th>Chairs</th><th>6-ft tables</th><th>Rounds</th><th></th></tr></thead>
-          <tbody id="rules"></tbody>
+          <thead><tr><th>Layout</th><th>Words to match</th><th>Table</th><th>Count means</th><th>Chairs per table</th><th></th></tr></thead>
+          <tbody id="layouts"></tbody>
         </table>
-        <button type="button" id="addRule">Add a layout</button>
+        <button type="button" id="addLayout">Add a layout</button>
+
+        <h4>Building exceptions</h4>
+        <p>Chairs per table in a building that sets rooms differently. 0 means that table isn't used there, and the other rectangular table is used instead. Leave blank to use the normal number.</p>
+        <table>
+          <thead><tr><th>Building words</th><th>8-ft</th><th>6-ft</th><th>Round</th><th></th></tr></thead>
+          <tbody id="buildings"></tbody>
+        </table>
+        <button type="button" id="addBuilding">Add a building</button>
+
         <label class="opt"><input type="checkbox" id="hideOutdoor"> Hide outdoor spaces (buildings named "Outside")</label>
       </div>
       <div class="actions">
         <button type="button" id="resetRules" class="left">Reset to defaults</button>
-        <button value="cancel" formnovalidate>Cancel</button>
+        <button type="button" id="cancelSettings">Cancel</button>
         <button value="save" id="saveSettings" class="primary">Save</button>
       </div>
     </form>

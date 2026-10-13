@@ -7,20 +7,21 @@
   const $ = (id) => document.getElementById(id);
   const DEFAULT_ORIGIN = 'https://east.mymazevo.com';
   const KEEP_DAYS = 21;
+  const TABLE_LABELS = { '': 'Chairs only', t8: '8-ft table', t6: '6-ft table', round: 'Banquet round' };
 
   const state = {
     lists: null,      // bookings per day from the last read
     days: null,       // [base, base+1, ...]
     chain: null,      // planner output
     fresh: {},        // day -> { diff, since } from the last read
-    tab: 0,           // which planned day is showing
+    view: 'plan',     // 'plan' or 'board'
     building: '',     // building filter
     search: '',
     dateTouched: false,
     readAt: null
   };
 
-  // ---------- small storage helpers (this page's own storage; nothing leaves the browser) ----------
+  // ---------- storage (this page's own storage; nothing leaves the browser) ----------
 
   function load(key, fallback) {
     try {
@@ -43,10 +44,18 @@
     } catch (e) { /* ignore */ }
   }
 
-  const settings = Object.assign({ rules: P.DEFAULT_RULES, hideOutdoor: false, span: 1 }, load('mzvSettings', {}));
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const stored = load('mzvSettings', {});
+  const settings = {
+    furniture: stored.furniture && stored.furniture.layouts ? stored.furniture : clone(P.DEFAULT_FURNITURE),
+    hideOutdoor: !!stored.hideOutdoor,
+    span: stored.span || 1,
+    view: stored.view === 'board' ? 'board' : 'plan'
+  };
+  state.view = settings.view;
   const saveSettings = () => save('mzvSettings', settings);
 
-  const doneSet = (day) => new Set(load('mzvDone:' + day, []));
+  const doneFor = (day) => new Set(load('mzvDone:' + day, []));
 
   // ---------- status line ----------
 
@@ -60,27 +69,17 @@
 
   // ---------- rendering ----------
 
-  function actionable(plan) {
-    return plan.rows.filter((r) => r.category === 'change' || r.category === 'empty').map((r) => r.key)
-      .concat(plan.midday.map((m) => m.key));
-  }
-
-  function renderTabs() {
-    const plans = state.chain.plans;
-    if (plans.length < 2) { $('tabs').innerHTML = ''; return; }
-    $('tabs').innerHTML = plans.map((p, i) => {
-      const work = p.counts.change + p.counts.empty + p.counts.midday;
-      return '<button role="tab" data-tab="' + i + '" aria-selected="' + (i === state.tab) + '">' + R.esc(P.dayLabel(p.day)) +
-        '<small>' + work + ' to set</small></button>';
-    }).join('');
-  }
-
-  function renderFilters(plan) {
-    const buildings = [...new Set(plan.rows.map((r) => r.building).concat(plan.freed.map((f) => f.building)))].sort();
+  function renderFilters() {
+    const seen = new Set();
+    for (const p of state.chain.plans) {
+      for (const r of p.rows) seen.add(r.building);
+      for (const f of p.freed) seen.add(f.building);
+    }
+    const buildings = [...seen].sort();
     if (state.building && !buildings.includes(state.building)) state.building = '';
     const pill = (value, label) => '<button class="pill" data-building="' + R.esc(value) + '" aria-pressed="' + (state.building === value) + '">' + R.esc(label) + '</button>';
     $('filters').innerHTML = (buildings.length > 1 ? pill('', 'All buildings') + buildings.map((b) => pill(b, b)).join('') : '') +
-      '<input type="search" id="search" placeholder="Find a room or event" value="' + R.esc(state.search) + '">';
+      '<input type="search" id="search" placeholder="Find a room, event or layout" value="' + R.esc(state.search) + '">';
   }
 
   function applyFilters() {
@@ -99,32 +98,25 @@
     }
   }
 
-  function renderProgress(plan) {
-    const keys = actionable(plan);
-    const done = doneSet(plan.day);
-    $('summary').innerHTML = R.summary(plan, keys.filter((k) => done.has(k)).length, keys.length);
-  }
-
   function render() {
     const plans = state.chain.plans;
-    if (state.tab >= plans.length) state.tab = 0;
-    const plan = plans[state.tab];
-    const fresh = state.fresh[plan.day];
-    const diff = fresh && fresh.diff;
+    const first = plans[0];
+    const last = plans[plans.length - 1];
+    const range = plans.length > 1 ? P.dayLabel(first.day) + ' to ' + P.dayLabel(last.day) : P.dayLabel(first.day);
+    $('title').textContent = (state.view === 'board' ? 'Setup status, ' : 'Room setup plan, ') + range;
+    document.title = 'Setup Planner · ' + range;
+    $('printed').textContent = 'Printed ' + new Date().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    $('viewPlan').setAttribute('aria-pressed', String(state.view === 'plan'));
+    $('viewBoard').setAttribute('aria-pressed', String(state.view === 'board'));
 
-    $('title').textContent = plans.length > 1
-      ? 'Room setup plan, ' + P.dayLabel(plans[0].day) + ' to ' + P.dayLabel(plans[plans.length - 1].day)
-      : 'Room setup plan for ' + P.dayLabel(plan.day);
-    document.title = 'Setup Planner · ' + P.dayLabel(plan.day);
-
-    renderTabs();
-    $('changes').innerHTML = R.changes(diff, fresh ? 'at ' + clock(new Date(fresh.since)) : '');
-    renderProgress(plan);
-    renderFilters(plan);
-    $('out').innerHTML = R.day(plan, {
-      done: doneSet(plan.day),
-      fresh: diff ? { added: new Set(diff.added.map((a) => String(a.id))), changed: new Set(diff.changed.map((c) => String(c.id))) } : null
-    });
+    $('summary').innerHTML = state.view === 'plan' ? R.summary(state.chain, doneFor) : '';
+    renderFilters();
+    $('out').innerHTML = state.view === 'board'
+      ? R.board(state.chain, doneFor)
+      : plans.map((p) => {
+        const f = state.fresh[p.day];
+        return R.day(p, { done: doneFor(p.day), diff: f && f.diff, since: f ? 'at ' + clock(new Date(f.since)) : '' });
+      }).join('');
     applyFilters();
 
     $('foot').textContent = 'Read from Mazevo Manage Operations at ' + clock(state.readAt) +
@@ -132,9 +124,15 @@
     for (const id of ['copy', 'csv', 'print']) $(id).disabled = false;
   }
 
-  function replan() {
-    state.chain = P.planChain(state.lists, state.days, { rules: settings.rules });
+  function rerender() {
+    const y = window.scrollY;
     render();
+    window.scrollTo(0, y);
+  }
+
+  function replan() {
+    state.chain = P.planChain(state.lists, state.days, { furniture: settings.furniture });
+    rerender();
   }
 
   // ---------- talking to the Mazevo tab ----------
@@ -153,12 +151,24 @@
     return null;
   }
 
-  function waitForLoad(tabId) {
+  // Start waiting before triggering the navigation, so a fast load isn't missed.
+  // For a brand-new tab, also check whether it has already finished.
+  function waitForLoad(tabId, checkNow) {
     return new Promise((resolve) => {
-      const done = () => { api.tabs.onUpdated.removeListener(listener); clearTimeout(timer); resolve(); };
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        api.tabs.onUpdated.removeListener(listener);
+        clearTimeout(timer);
+        resolve();
+      };
       const listener = (id, info) => { if (id === tabId && info.status === 'complete') done(); };
       const timer = setTimeout(done, 30000);
       api.tabs.onUpdated.addListener(listener);
+      if (checkNow) {
+        Promise.resolve(api.tabs.get(tabId)).then((t) => { if (t && t.status === 'complete') done(); }, () => {});
+      }
     });
   }
 
@@ -175,7 +185,11 @@
     return tabs[0] || null;
   }
 
+  let runSeq = 0;
+
   async function run() {
+    const my = ++runSeq;
+    const stale = () => my !== runSeq; // a newer run (other date or span) has started
     if (!state.dateTouched) $('base').value = P.ymd(new Date());
     const base = $('base').value || P.ymd(new Date());
     const span = Math.min(3, Math.max(1, +$('span').value || 1));
@@ -192,15 +206,16 @@
       if (!tab) {
         status('Opening Mazevo…', 'busy');
         tab = await api.tabs.create({ url: load('mzvOrigin', DEFAULT_ORIGIN) + '/ops-manage', active: false, index: me ? me.index : undefined });
-        await waitForLoad(tab.id);
+        await waitForLoad(tab.id, true);
       }
 
       let info = await pingUntil(tab.id, 3000);
       if (!info || !info.hooked) {
         // The tab was open before the extension was installed or updated.
         status('Reloading Mazevo so the planner can read it…', 'busy');
+        const reloaded = waitForLoad(tab.id);
         await api.tabs.reload(tab.id);
-        await waitForLoad(tab.id);
+        await reloaded;
         info = await pingUntil(tab.id, 15000);
       }
       if (!info) throw new Error('Could not connect to the Mazevo tab. Reload it and try again.');
@@ -210,8 +225,9 @@
       if (/login/i.test(info.path)) throw new Error(signIn);
       if (!/ops-manage/i.test(info.path)) {
         status('Opening Manage Operations…', 'busy');
+        const opened = waitForLoad(tab.id);
         await api.tabs.update(tab.id, { url: info.origin + '/ops-manage' });
-        await waitForLoad(tab.id);
+        await opened;
         info = await pingUntil(tab.id, 15000);
         if (!info) throw new Error('Could not open Manage Operations.');
         if (/login/i.test(info.path)) throw new Error(signIn);
@@ -221,13 +237,14 @@
       status('Reading ' + days.map(P.dayLabel).join(', ') + ' from Mazevo…', 'busy');
       await api.tabs.update(tab.id, { active: true });
       const res = await api.tabs.sendMessage(tab.id, { type: 'collect', days });
+      if (stale()) return;
       if (me) await api.tabs.update(me.id, { active: true });
       if (!res || !res.ok) throw new Error((res && res.error) || 'Mazevo did not answer.');
 
       state.lists = days.map((d) => res.byDay[d] || []);
       state.days = days;
       state.readAt = new Date();
-      state.chain = P.planChain(state.lists, days, { rules: settings.rules });
+      state.chain = P.planChain(state.lists, days, { furniture: settings.furniture });
 
       // Compare with what this browser saw last time for each day, then remember this read.
       state.fresh = {};
@@ -240,10 +257,11 @@
       render();
       status('');
     } catch (e) {
+      if (stale()) return;
       if (me && tab) { try { await api.tabs.update(me.id, { active: true }); } catch (x) { /* ignore */ } }
       status(e.message || String(e), 'error');
     } finally {
-      $('run').disabled = false;
+      if (!stale()) $('run').disabled = false;
     }
   }
 
@@ -254,7 +272,7 @@
     const span = +$('span').value || 1;
     const dow = new Date(base + 'T12:00:00').getDay();
     if (dow === 5 && span < 3) {
-      $('hint').innerHTML = 'It’s Friday. Plan the weekend and Monday too? <button id="weekend">Plan through Monday</button>';
+      $('hint').innerHTML = 'It’s Friday. Plan the weekend and Monday too? <button id="weekend" data-span="3">Plan through Monday</button>';
     } else if (dow === 6 && span < 2) {
       $('hint').innerHTML = 'It’s Saturday. Plan through Monday too? <button id="weekend" data-span="2">Plan through Monday</button>';
     } else {
@@ -264,16 +282,24 @@
 
   // ---------- export ----------
 
+  // Event names come from requesters; never let a cell start a spreadsheet formula.
+  function cell(c) {
+    if (c == null) return '';
+    if (typeof c === 'number') return String(c);
+    const s = String(c);
+    return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+  }
+
   function tsv() {
-    return R.table(state.chain).map((r) => r.map((c) => String(c == null ? '' : c).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
+    return R.table(state.chain, doneFor).map((r) => r.map((c) => cell(c).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
   }
 
   function csv() {
     const q = (c) => {
-      const s = String(c == null ? '' : c);
+      const s = cell(c);
       return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
-    return '﻿' + R.table(state.chain).map((r) => r.map(q).join(',')).join('\r\n');
+    return '﻿' + R.table(state.chain, doneFor).map((r) => r.map(q).join(',')).join('\r\n');
   }
 
   function download(name, text, type) {
@@ -296,25 +322,59 @@
 
   // ---------- settings ----------
 
-  function ruleRow(r) {
-    const num = (v, name) => '<td><input type="number" step="0.001" min="0" name="' + name + '" value="' + R.esc(v) + '"></td>';
-    return '<tr><td><input type="text" name="match" value="' + R.esc(r.match) + '"></td>' +
-      num(r.chairs, 'chairs') + num(r.tables, 'tables') + num(r.rounds, 'rounds') +
-      '<td><button type="button" class="linkish" data-remove-rule>Remove</button></td></tr>';
+  const num = (v) => (v === '' || v == null ? '' : R.esc(v));
+
+  function layoutRow(l) {
+    const opts = Object.keys(TABLE_LABELS).map((k) => '<option value="' + k + '"' + ((l.table || '') === k ? ' selected' : '') + '>' + TABLE_LABELS[k] + '</option>').join('');
+    return '<tr><td><input type="text" name="name" value="' + R.esc(l.name || '') + '"></td>' +
+      '<td><input type="text" name="match" value="' + R.esc(l.match || '') + '"></td>' +
+      '<td><select name="table">' + opts + '</select></td>' +
+      '<td><select name="per"><option value="people"' + (l.perTable ? '' : ' selected') + '>People</option><option value="tables"' + (l.perTable ? ' selected' : '') + '>Tables</option></select></td>' +
+      '<td><input type="number" step="any" min="0" name="cpt" value="' + num(l.perTable ? l.chairsPerTable : '') + '" placeholder="—"></td>' +
+      '<td><button type="button" class="linkish" data-remove>Remove</button></td></tr>';
+  }
+
+  function buildingRow(b) {
+    const s = b.seats || {};
+    return '<tr><td><input type="text" name="match" value="' + R.esc(b.match || '') + '"></td>' +
+      ['t8', 't6', 'round'].map((k) => '<td><input type="number" step="any" min="0" name="' + k + '" value="' + num(s[k]) + '"></td>').join('') +
+      '<td><button type="button" class="linkish" data-remove>Remove</button></td></tr>';
+  }
+
+  function fillSettings(f) {
+    $('seat-t8').value = f.seats.t8;
+    $('seat-t6').value = f.seats.t6;
+    $('seat-round').value = f.seats.round;
+    $('layouts').innerHTML = f.layouts.map(layoutRow).join('');
+    $('buildings').innerHTML = (f.buildings || []).map(buildingRow).join('');
   }
 
   function openSettings() {
-    $('rules').innerHTML = settings.rules.map(ruleRow).join('');
+    fillSettings(settings.furniture);
     $('hideOutdoor').checked = !!settings.hideOutdoor;
     $('settings').returnValue = ''; // Esc must not reuse an old "save"
     $('settings').showModal();
   }
 
-  function readRules() {
-    return [...$('rules').querySelectorAll('tr')].map((tr) => {
-      const v = (n) => tr.querySelector('[name=' + n + ']').value;
-      return { match: v('match').trim(), chairs: +v('chairs') || 0, tables: +v('tables') || 0, rounds: +v('rounds') || 0 };
-    }).filter((r) => r.match);
+  function readSettings() {
+    const val = (tr, n) => tr.querySelector('[name=' + n + ']').value;
+    const layouts = [...$('layouts').querySelectorAll('tr')].map((tr) => {
+      const perTable = val(tr, 'per') === 'tables';
+      return { name: val(tr, 'name').trim(), match: val(tr, 'match').trim(), table: val(tr, 'table'), perTable, chairsPerTable: perTable ? +val(tr, 'cpt') || 0 : undefined };
+    }).filter((l) => l.match);
+    const buildings = [...$('buildings').querySelectorAll('tr')].map((tr) => {
+      const seats = {};
+      for (const k of ['t8', 't6', 'round']) {
+        const v = val(tr, k);
+        if (v !== '') seats[k] = +v;
+      }
+      return { match: val(tr, 'match').trim(), seats };
+    }).filter((b) => b.match);
+    return {
+      seats: { t8: +$('seat-t8').value || 0, t6: +$('seat-t6').value || 0, round: +$('seat-round').value || 0 },
+      layouts,
+      buildings
+    };
   }
 
   // ---------- wiring ----------
@@ -325,7 +385,17 @@
   showHint();
 
   $('run').addEventListener('click', run);
-  $('base').addEventListener('change', () => { state.dateTouched = $('base').value !== P.ymd(new Date()); run(); });
+
+  // Typing a date fires "change" for each part; wait until it settles.
+  let dateTimer = 0;
+  $('base').addEventListener('change', () => {
+    clearTimeout(dateTimer);
+    dateTimer = setTimeout(() => {
+      if (!$('base').value) return;
+      state.dateTouched = $('base').value !== P.ymd(new Date());
+      run();
+    }, 700);
+  });
   $('span').addEventListener('change', () => { settings.span = +$('span').value; saveSettings(); run(); });
 
   $('hint').addEventListener('click', (e) => {
@@ -335,16 +405,22 @@
     run();
   });
 
-  $('tabs').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-tab]');
-    if (!b) return;
-    state.tab = +b.dataset.tab;
-    render();
-  });
+  const setView = (v) => {
+    state.view = v;
+    settings.view = v;
+    saveSettings();
+    if (state.chain) render();
+    else {
+      $('viewPlan').setAttribute('aria-pressed', String(v === 'plan'));
+      $('viewBoard').setAttribute('aria-pressed', String(v === 'board'));
+    }
+  };
+  $('viewPlan').addEventListener('click', () => setView('plan'));
+  $('viewBoard').addEventListener('click', () => setView('board'));
 
   $('summary').addEventListener('click', (e) => {
     const b = e.target.closest('[data-jump]');
-    const sec = b && $('sec-' + b.dataset.jump);
+    const sec = b && b.dataset.jump && document.getElementById(b.dataset.jump);
     if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -364,12 +440,11 @@
   $('out').addEventListener('change', (e) => {
     const box = e.target.closest('input[type=checkbox][data-key]');
     if (!box) return;
-    const plan = state.chain.plans[state.tab];
-    const done = doneSet(plan.day);
+    const day = box.dataset.day;
+    const done = doneFor(day);
     if (box.checked) done.add(box.dataset.key); else done.delete(box.dataset.key);
-    save('mzvDone:' + plan.day, [...done]);
-    box.closest('tr').classList.toggle('done', box.checked);
-    renderProgress(plan);
+    save('mzvDone:' + day, [...done]);
+    rerender();
   });
   $('out').addEventListener('click', (e) => {
     if (e.target.closest('[data-open-settings]')) openSettings();
@@ -382,25 +457,31 @@
     const p = state.chain.plans;
     download('setup-plan-' + p[0].day + (p.length > 1 ? '-to-' + p[p.length - 1].day : '') + '.csv', csv(), 'text/csv;charset=utf-8');
   });
-  $('print').addEventListener('click', () => window.print());
+  $('print').addEventListener('click', () => {
+    $('printed').textContent = 'Printed ' + new Date().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    window.print();
+  });
 
   $('settingsBtn').addEventListener('click', openSettings);
-  $('addRule').addEventListener('click', () => {
-    $('rules').insertAdjacentHTML('beforeend', ruleRow({ match: '', chairs: 1, tables: 0, rounds: 0 }));
+  $('cancelSettings').addEventListener('click', () => $('settings').close('cancel'));
+  $('addLayout').addEventListener('click', () => {
+    $('layouts').insertAdjacentHTML('beforeend', layoutRow({ name: '', match: '', table: 't6' }));
   });
-  $('resetRules').addEventListener('click', () => {
-    $('rules').innerHTML = P.DEFAULT_RULES.map(ruleRow).join('');
+  $('addBuilding').addEventListener('click', () => {
+    $('buildings').insertAdjacentHTML('beforeend', buildingRow({ match: '', seats: {} }));
   });
-  $('rules').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-remove-rule]');
+  $('resetRules').addEventListener('click', () => fillSettings(P.DEFAULT_FURNITURE));
+  $('settings').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-remove]');
     if (b) b.closest('tr').remove();
   });
   $('settings').addEventListener('close', () => {
     if ($('settings').returnValue !== 'save') return;
-    settings.rules = readRules();
+    settings.furniture = readSettings();
     settings.hideOutdoor = $('hideOutdoor').checked;
     saveSettings();
     if (state.lists) replan();
+    else if (state.chain) rerender();
   });
 
   window.__mzvTest = { state, render, replan, settings }; // used by tests

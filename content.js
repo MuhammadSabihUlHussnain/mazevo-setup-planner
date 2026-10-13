@@ -18,14 +18,19 @@
 
     const bookings = list.map(P.condense);
     const ts = Date.now();
-    if (request && request.startDate) {
-      captures.set(P.ymd(new Date(request.startDate)), { ts, bookings });
-    } else {
-      const byDay = {};
-      for (const b of bookings) (byDay[String(b.start).slice(0, 10)] ||= []).push(b);
-      for (const day of Object.keys(byDay)) captures.set(day, { ts, bookings: byDay[day] });
-    }
+    const day = requestDay(request) || displayedDay();
+    if (day) captures.set(day, { ts, bookings });
   });
+
+  // Which day a GetBookings request was for. "2026-10-13" is taken as is; a
+  // full timestamp such as "2026-10-13T05:00:00.000Z" is local midnight.
+  function requestDay(request) {
+    const v = request && request.startDate;
+    if (typeof v !== 'string') return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    const d = new Date(v);
+    return isNaN(d) ? null : P.ymd(d);
+  }
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -39,18 +44,21 @@
     }
   }
 
-  function dateLabel() {
-    return [...document.querySelectorAll('label.linkButton, label, span')]
-      .find((el) => el.children.length === 0 && P.parseLabelDate(el.textContent));
+  const isDateLabel = (el) => el.children.length === 0 && P.parseLabelDate(el.textContent);
+
+  function dateLabel(thorough) {
+    const quick = [...document.querySelectorAll('label.linkButton')].find(isDateLabel);
+    if (quick || !thorough) return quick || null;
+    return [...document.querySelectorAll('label, span')].find(isDateLabel) || null;
   }
 
   function displayedDay() {
-    const l = dateLabel();
+    const l = dateLabel(true);
     return l ? P.parseLabelDate(l.textContent) : null;
   }
 
   function arrow(dir) {
-    let box = dateLabel();
+    let box = dateLabel(true);
     for (let i = 0; i < 5 && box; i++) {
       box = box.parentElement;
       if (box && box.querySelector('svg[data-icon="chevron-' + dir + '"]')) break;
@@ -103,7 +111,7 @@
   }
 
   async function collect(days) {
-    if (!(await waitFor(dateLabel, 20000))) {
+    if (!(await waitFor(() => dateLabel(true), 20000))) {
       throw new Error(/login/i.test(location.pathname)
         ? 'Sign in to Mazevo first.'
         : 'Open Manage Operations in day view, then try again.');
@@ -114,6 +122,8 @@
     try { await goTo(original); } catch (e) { /* leaving it on another day is harmless */ }
     return { byDay };
   }
+
+  let queue = Promise.resolve();
 
   api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'ping') {
@@ -127,7 +137,10 @@
       return;
     }
     if (msg.type === 'collect') {
-      collect(msg.days).then(
+      // One read at a time, so two report tabs can't fight over the date arrows.
+      const job = queue.then(() => collect(msg.days));
+      queue = job.catch(() => {});
+      job.then(
         (r) => sendResponse({ ok: true, ...r }),
         (e) => sendResponse({ ok: false, error: e.message })
       );
@@ -157,7 +170,13 @@
       '<rect x="9" y="1" width="6" height="6" rx="1.5" opacity=".6"/><rect x="1" y="9" width="6" height="6" rx="1.5" opacity=".6"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>' +
       'Plan setups</button><button class="x" title="Hide until reload" aria-label="Hide">×</button></div>';
     shadow.querySelector('.go').addEventListener('click', () => {
-      api.runtime.sendMessage({ type: 'openReport' });
+      const stale = () => {
+        shadow.querySelector('.go').lastChild.textContent = 'Reload this page to use the planner';
+      };
+      try {
+        const p = api.runtime.sendMessage({ type: 'openReport' });
+        if (p && p.catch) p.catch(stale);
+      } catch (e) { stale(); }
     });
     shadow.querySelector('.x').addEventListener('click', () => {
       dismissed = true;

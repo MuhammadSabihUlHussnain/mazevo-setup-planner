@@ -13,13 +13,13 @@ A browser extension for event operations teams who use **Mazévo**. It compares 
 - **Flip list.** Every room that needs a different layout or count, what's in it now, when it frees up, what it needs and when setup starts. Sorted in the order rooms free up.
 - **Free rooms.** Rooms with nothing in them beforehand, so they can be set up any time.
 - **Changeovers during the day.** Rooms with several events that need a flip between them, with a warning when there are less than 30 minutes or none at all.
-- **Furniture estimate.** Chairs, 6-ft tables and rounds to bring in or take out, per room and per building. The rules are editable to match how your crew sets rooms.
+- **Furniture.** Each room shows its full build (for example "15 × 6-ft tables · 30 chairs") and what to bring in or take out, with totals per building. Chairs per table, which table each layout uses, and building exceptions are all editable.
 - **Changed since you last checked.** New, updated and cancelled bookings since the last time you refreshed, highlighted in the list.
-- **Checklist.** Tick rooms off as they're done. A progress bar shows how far along you are, and ticks are saved in your browser.
-- **Plan ahead.** Tomorrow, or the next 2 or 3 days. On Fridays it offers to plan through Monday, and it carries each room's setup across empty days.
+- **Checklist and Status board.** Tick rooms off as they're done. The **Status board** view lists every setup as Done, In progress or Not done, with "9 of 13 ready" at the top, for a manager walk-through. A setup counts as done when it's ticked here or marked complete in Mazévo.
+- **Plan ahead.** Tomorrow, or the next 2 or 3 days, all on one page. On Fridays it offers to plan through Monday, and it carries each room's setup across empty days.
 - **Flags.** Bookings on Hold, "Changed in Mazévo" tags, Social Tables room diagram links, headcounts larger than the setup, and counts of 1 that look like typos.
 - **Find things fast.** Filter by building, search by room, event or layout, and optionally hide outdoor spaces.
-- **Share it.** Copy for Excel or Sheets, download a CSV, or print a crew sheet with tick boxes.
+- **Share it.** Copy for Excel or Sheets, download a CSV, or print. Prints are landscape, one page per day, with tick boxes, and leave out the "not booked" and "no setup" lists.
 - **One click from Mazévo.** A **Plan setups** button appears on the Manage Operations page, so there's no need to pin the toolbar icon.
 
 ## Install
@@ -75,16 +75,29 @@ Then use it exactly like in Chrome. If the toolbar button isn't visible, right-c
 At the top of the report:
 
 - **From** is today's date by default, and **Refresh from Mazevo** always moves it to the real date unless you picked one yourself.
-- **Plan tomorrow / next 2 days / next 3 days** sets how far ahead to look. Several days show as tabs.
-- **Copy**, **CSV** and **Print** export what you see. Copy and CSV include every planned day.
-- **⚙ Settings** has the furniture rules and the option to hide outdoor spaces.
+- **Plan tomorrow / next 2 days / next 3 days** sets how far ahead to look. All days show on one page, one after another.
+- **Crew plan / Status board** switches between the detailed plan and the done / not done list.
+- **Copy**, **CSV** and **Print** export every planned day. Copy and CSV include each setup's status and build.
+- **⚙ Settings** has the furniture rules and the option to hide outdoor spaces. Enter saves, Cancel discards.
 
 ## How it decides
 
 - **Setup in the room** = the *Room Setup* service on the **last** booking in that room before the planned day (by teardown end). With several days, a room keeps its setup across days with no events.
 - **Needed setup** = the *Room Setup* service on the **first** booking in that room on the planned day (by setup start). Later bookings that need a different setup appear under **Changeovers during the day**.
 - Same layout, different number → "Add N seats" / "Remove N seats" (tables for tabling). Different layout → "Old (n) → New (n)".
-- **Furniture** per unit of the setup count, by default: Theater 1 chair. Classroom 1 chair and ½ a 6-ft table. Banquet 1 chair and ⅛ of a round. Hollow square / U-shape / conference 1 chair and ½ a table. Tabling 1 table and 2 chairs. Layouts the rules don't match are counted separately.
+- **Furniture.** Each layout uses one table type, and the setup count is the number of chairs. Default chairs per table: 8-ft table 4, 6-ft table 2, banquet round 8.
+
+  | Layout | Built from |
+  |---|---|
+  | Classroom | 6-ft tables |
+  | Banquet | Banquet rounds |
+  | Hollow square (also conference, boardroom) | 8-ft tables |
+  | U-shape | 8-ft tables |
+  | Theatre | Chairs only |
+  | Tabling | The count is tables: 6-ft tables with 2 chairs each |
+
+  **Trent Lott** uses only 8-ft tables (3 chairs each) and banquet rounds (6 chairs each), so its classroom and tabling setups are built from 8-ft tables. Layouts the rules don't match are counted separately. Change any of this in ⚙ Settings.
+- **Status.** Done means ticked in the report or marked complete in Mazévo. In progress comes from Mazévo. Ticks are saved in the browser where they were made, so for a manager on another computer, mark setups complete in Mazévo.
 - **Changed since you last checked** compares with the last refresh in this browser for the same day. Mazévo's own "changed" flag is shown as **Changed in Mazévo**.
 
 It only sees what your Manage Operations view shows, so your saved Operations filters (buildings, service providers) apply. Ticks, settings and the last-seen copy for change tracking are kept in this browser for 3 weeks and never leave it.
